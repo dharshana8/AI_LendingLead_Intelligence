@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment files
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Large ML artefacts — regenerate with train_model.py
+backend/rf_model.pkl
+backend/scaler.pkl
+backend/shap_explainer.pkl
+
+# Dataset
+*.xlsx
+
+# Node / frontend
+node_modules/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
