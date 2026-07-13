@@ -257,12 +257,15 @@ Guidelines:
         messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": payload.message})
 
-    client = Groq(api_key=api_key)
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=messages,
-        max_tokens=1024,
-        temperature=0.7,
-    )
-    return {"reply": response.choices[0].message.content}
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7,
+        )
+        return {"reply": response.choices[0].message.content}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"AI Assistant error: {str(e)}")
 
