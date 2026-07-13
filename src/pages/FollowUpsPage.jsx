@@ -1,14 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
-import { leads } from "../data/mockData";
-
-const FOLLOWUPS = leads.slice(0, 12).map((l, i) => ({
-  ...l,
-  followupDate: i < 4 ? "Today" : i < 7 ? "Tomorrow" : `Jun ${28 + i}`,
-  followupTime: ["9:00 AM", "10:30 AM", "11:00 AM", "2:00 PM", "3:30 PM", "4:00 PM"][i % 6],
-  status: i < 2 ? "Completed" : i < 5 ? "Pending" : i < 8 ? "Upcoming" : "Rescheduled",
-  notes: i === 0 ? "Discussed Home Loan options. Customer interested." : i === 1 ? "Sent loan brochure via email." : "",
-}));
 
 const STATUS_COLORS = {
   Completed: ["#dcfce7", "#15803d"],
@@ -18,9 +9,17 @@ const STATUS_COLORS = {
 };
 
 export default function FollowUpsPage() {
-  const { darkMode, addToast } = useApp();
+  const { darkMode, addToast, customers } = useApp();
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+
+  const FOLLOWUPS = useMemo(() => customers.slice(0, 12).map((l, i) => ({
+    ...l,
+    followupDate: i < 4 ? "Today" : i < 7 ? "Tomorrow" : `Jun ${28 + i}`,
+    followupTime: ["9:00 AM", "10:30 AM", "11:00 AM", "2:00 PM", "3:30 PM", "4:00 PM"][i % 6],
+    status: i < 2 ? "Completed" : i < 5 ? "Pending" : i < 8 ? "Upcoming" : "Rescheduled",
+    notes: i === 0 ? "Discussed Home Loan options. Customer interested." : i === 1 ? "Sent loan brochure via email." : "",
+  })), [customers]);
 
   const bg = darkMode ? "#0f172a" : "#f5f7fb";
   const cardBg = darkMode ? "#1e293b" : "#fff";

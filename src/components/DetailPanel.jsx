@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { PriorityBadge, LoanBadge } from "./Badges";
 import SignalBars from "./SignalBars";
+import { useApp } from "../context/AppContext";
+import { apiDeleteCustomer, apiUpdateCustomer } from "../services/api";
 
 function CircleScore({ score }) {
   const color = score >= 80 ? "#22c55e" : score >= 65 ? "#f59e0b" : "#ef4444";
@@ -100,7 +102,26 @@ function btnStyle(bg, color) {
   };
 }
 
-export default function DetailPanel({ lead, onClose }) {
+export default function DetailPanel({ lead, onClose, onRefresh }) {
+  const { addToast } = useApp();
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Remove ${lead.name} from portfolio?`)) return;
+    try {
+      await apiDeleteCustomer(lead.id);
+      addToast(`${lead.name} removed`, "success");
+      onClose();
+      onRefresh?.();
+    } catch { addToast("Delete failed", "error"); }
+  };
+
+  const handleConvert = async () => {
+    try {
+      await apiUpdateCustomer(lead.id, { status: "Converted" });
+      addToast(`${lead.name} marked as Converted`, "success");
+      onRefresh?.();
+    } catch { addToast("Update failed", "error"); }
+  };
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (lead) setTimeout(() => setVisible(true), 10);
@@ -176,6 +197,20 @@ export default function DetailPanel({ lead, onClose }) {
             onMouseEnter={e => e.target.style.opacity = "0.9"}
             onMouseLeave={e => e.target.style.opacity = "1"}
           >🚀 Initiate Outreach</button>
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={handleConvert} style={{
+              flex: 1, padding: "10px", background: "#dcfce7", color: "#15803d",
+              border: "1px solid #bbf7d0", borderRadius: "10px", fontSize: "13px",
+              fontWeight: "700", cursor: "pointer",
+            }}>✓ Mark Converted</button>
+            <button onClick={handleDelete} style={{
+              flex: 1, padding: "10px", background: "#fee2e2", color: "#b91c1c",
+              border: "1px solid #fecaca", borderRadius: "10px", fontSize: "13px",
+              fontWeight: "700", cursor: "pointer",
+            }}>🗑 Remove</button>
+          </div>
         </div>
       </div>
     </>

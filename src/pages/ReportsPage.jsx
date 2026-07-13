@@ -19,7 +19,7 @@ const TYPE_COLORS = {
 };
 
 export default function ReportsPage() {
-  const { darkMode, addToast } = useApp();
+  const { darkMode, addToast, exportCSV } = useApp();
   const [generating, setGenerating] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -54,7 +54,10 @@ export default function ReportsPage() {
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           {["CSV", "Excel", "PDF"].map(fmt => (
-            <button key={fmt} onClick={() => addToast(`Exporting all reports as ${fmt}...`, "info")}
+            <button key={fmt} onClick={() => {
+              if (fmt === "CSV") { exportCSV().then(() => addToast("CSV export downloaded", "success")).catch(() => addToast("Export failed", "error")); }
+              else { addToast(`Exporting all reports as ${fmt}...`, "info"); }
+            }}
               style={{
                 padding: "8px 16px", borderRadius: "8px", border: "1.5px solid #1e40af",
                 background: "transparent", color: "#1e40af", fontSize: "12px", fontWeight: "600", cursor: "pointer",

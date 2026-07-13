@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
-import { leads } from "../data/mockData";
 import { PriorityBadge, LoanBadge } from "../components/Badges";
 import DetailPanel from "../components/DetailPanel";
 
@@ -20,7 +19,7 @@ function Avatar({ name, size = 38 }) {
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Applied", "Converted"];
 
 export default function CustomersPage() {
-  const { darkMode, addToast } = useApp();
+  const { darkMode, addToast, customers, exportCSV } = useApp();
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -37,12 +36,12 @@ export default function CustomersPage() {
   const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
   const rowHoverBg = darkMode ? "#1e3a5f" : "#eff6ff";
 
-  const enriched = useMemo(() => leads.map((l, i) => ({
+  const enriched = useMemo(() => customers.map((l, i) => ({
     ...l,
     status: STATUS_OPTIONS[1 + (i % (STATUS_OPTIONS.length - 1))],
     lastContact: `${(i % 28) + 1} Jun 2025`,
     assignedTo: ["Ankit Sharma", "Priya Mehta", "Ravi Kumar"][i % 3],
-  })), []);
+  })), [customers]);
 
   const filtered = useMemo(() => {
     let data = enriched;
@@ -93,17 +92,17 @@ export default function CustomersPage() {
             </>
           )}
           <ActionBtn label="+ Add Customer" color="#1e40af" onClick={() => addToast("Add customer form coming soon", "info")} primary />
-          <ActionBtn label="📤 Export CSV" color="#374151" onClick={() => addToast("Exporting all customers...", "info")} />
+          <ActionBtn label="📤 Export CSV" color="#374151" onClick={() => exportCSV().then(() => addToast("Export downloaded", "success")).catch(() => addToast("Export failed", "error"))} />
         </div>
       </div>
 
       {/* Stats Row */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
         {[
-          { label: "Total", value: leads.length, color: "#1e40af", bg: "#eff6ff" },
-          { label: "High Priority", value: leads.filter(l => l.priority === "High").length, color: "#15803d", bg: "#dcfce7" },
-          { label: "Medium Priority", value: leads.filter(l => l.priority === "Medium").length, color: "#b45309", bg: "#fef3c7" },
-          { label: "Low Priority", value: leads.filter(l => l.priority === "Low").length, color: "#b91c1c", bg: "#fee2e2" },
+          { label: "Total", value: customers.length, color: "#1e40af", bg: "#eff6ff" },
+          { label: "High Priority", value: customers.filter(l => l.priority === "High").length, color: "#15803d", bg: "#dcfce7" },
+          { label: "Medium Priority", value: customers.filter(l => l.priority === "Medium").length, color: "#b45309", bg: "#fef3c7" },
+          { label: "Low Priority", value: customers.filter(l => l.priority === "Low").length, color: "#b91c1c", bg: "#fee2e2" },
         ].map(({ label, value, color, bg: sbg }) => (
           <div key={label} style={{
             flex: "1 1 100px", background: cardBg, borderRadius: "10px",

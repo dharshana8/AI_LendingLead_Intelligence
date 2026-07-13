@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics } from "../services/api";
 
 const AppContext = createContext(null);
 
@@ -22,6 +23,46 @@ export function AppProvider({ children }) {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [toasts, setToasts] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // ── Shared data store ──────────────────────────────────────────────────────
+  const [customers, setCustomers] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState(null);
+
+  const fetchCustomers = useCallback(async () => {
+    setDataLoading(true);
+    setDataError(null);
+    try {
+      const list = await apiGetCustomers();
+      setCustomers(list);
+      try {
+        const raw = await apiGetAnalytics();
+        setAnalytics(normalizeAnalytics(raw, list));
+      } catch {
+        setAnalytics(normalizeAnalytics(null, list));
+      }
+    } catch (e) {
+      setDataError(e?.response?.data?.detail || e.message || "Failed to connect to backend");
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+
+  const loadSample = useCallback(async () => {
+    await apiLoadSample();
+    await fetchCustomers();
+  }, [fetchCustomers]);
+
+  const exportCSV = useCallback(async () => {
+    const blob = await apiExport();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "idbi_leads_export.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const login = useCallback((employeeId, password) => {
     const found = MOCK_USERS.find(u => u.employeeId === employeeId && u.password === password);
@@ -50,6 +91,8 @@ export function AppProvider({ children }) {
       notifications, markAllRead, unreadCount,
       toasts, addToast,
       sidebarCollapsed, setSidebarCollapsed,
+      customers, analytics, dataLoading, dataError,
+      refetch: fetchCustomers, loadSample, exportCSV,
     }}>
       {children}
     </AppContext.Provider>
