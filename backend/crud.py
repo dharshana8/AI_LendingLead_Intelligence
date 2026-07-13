@@ -1,6 +1,5 @@
-import json
-from sqlalchemy.orm import Session
-from models import Lead
+from datetime import datetime
+from database import leads_col, get_next_sequence_value
 from schemas import CustomerCreate, CustomerUpdate
 from feature_engineering import derive_features
 from ml_model import predict
@@ -20,76 +19,67 @@ def _enrich(data: dict) -> dict:
     ml_result = predict(ml_input)
     engine_result = run_loan_engine(features, ml_result["ai_score"])
 
-    # Serialize shap_top3 list to JSON string for Text column storage
-    shap_top3_json = json.dumps(ml_result.get("shap_top3", []))
-
     return {
         **features,
         "ai_score": ml_result["ai_score"],
         "conversion_probability": ml_result["conversion_probability"],
-        "shap_top3": shap_top3_json,
+        "shap_top3": ml_result.get("shap_top3", []),
         **engine_result,
     }
 
 
-def _deserialize_lead(lead: Lead) -> Lead:
-    """Deserialize shap_top3 from JSON string back to list for API response."""
-    if isinstance(lead.shap_top3, str):
-        try:
-            lead.shap_top3 = json.loads(lead.shap_top3)
-        except (json.JSONDecodeError, TypeError):
-            lead.shap_top3 = []
+async def create_lead(payload: CustomerCreate) -> dict:
+    raw = payload.model_dump()
+    enriched = _enrich(raw)
+    customer_id = await get_next_sequence_value("customer_id")
+    
+    lead = {
+        **raw,
+        **enriched,
+        "customer_id": customer_id,
+        "status": "New",
+        "assigned_to": "",
+        "last_contact": "",
+        "created_at": datetime.utcnow()
+    }
+    await leads_col.insert_one(lead)
     return lead
 
 
-def create_lead(db: Session, payload: CustomerCreate) -> Lead:
-    raw = payload.model_dump()
-    enriched = _enrich(raw)
-    lead = Lead(**raw, **enriched)
-    db.add(lead)
-    db.commit()
-    db.refresh(lead)
-    return _deserialize_lead(lead)
-
-
-def get_leads(db: Session, priority: str | None = None) -> list[Lead]:
-    q = db.query(Lead)
+async def get_leads(priority: str | None = None) -> list[dict]:
+    query = {}
     if priority:
-        q = q.filter(Lead.priority == priority)
-    leads = q.order_by(Lead.ai_score.desc()).all()
-    return [_deserialize_lead(l) for l in leads]
+        query["priority"] = priority
+    cursor = leads_col.find(query).sort("ai_score", -1)
+    return await cursor.to_list(length=None)
 
 
-def get_lead(db: Session, customer_id: int) -> Lead | None:
-    lead = db.query(Lead).filter(Lead.customer_id == customer_id).first()
-    return _deserialize_lead(lead) if lead else None
+async def get_lead(customer_id: int) -> dict | None:
+    return await leads_col.find_one({"customer_id": customer_id})
 
 
-def delete_lead(db: Session, customer_id: int) -> bool:
-    lead = db.query(Lead).filter(Lead.customer_id == customer_id).first()
-    if not lead:
-        return False
-    db.delete(lead)
-    db.commit()
-    return True
+async def delete_lead(customer_id: int) -> bool:
+    res = await leads_col.delete_one({"customer_id": customer_id})
+    return res.deleted_count > 0
 
 
 CRM_ONLY_FIELDS = {"status", "assigned_to", "last_contact"}
 
 
-def update_lead(db: Session, customer_id: int, payload: CustomerUpdate) -> Lead | None:
-    lead = db.query(Lead).filter(Lead.customer_id == customer_id).first()
+async def update_lead(customer_id: int, payload: CustomerUpdate) -> dict | None:
+    lead = await leads_col.find_one({"customer_id": customer_id})
     if not lead:
         return None
+    
     updates = payload.model_dump(exclude_none=True)
     for k, v in updates.items():
-        setattr(lead, k, v)
-    # Only re-run ML pipeline if financial fields changed
+        lead[k] = v
+        
     if not updates.keys() <= CRM_ONLY_FIELDS:
-        raw = {c.name: getattr(lead, c.name) for c in lead.__table__.columns}
-        enriched = _enrich(raw)
+        enriched = _enrich(lead)
         for k, v in enriched.items():
-            setattr(lead, k, v)
-    db.commit()
-    db.refresh(lead)
-    return _deserialize_lead(lead)
+            lead[k] = v
+            
+    await leads_col.replace_one({"customer_id": customer_id}, lead)
+    return lead
+

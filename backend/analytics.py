@@ -1,13 +1,12 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from models import Lead
+from database import leads_col
 
 
 AVG_LOAN_VALUE = 500000  # INR — used for potential business value estimate
 
 
-def get_analytics(db: Session) -> dict:
-    leads = db.query(Lead).all()
+async def get_analytics() -> dict:
+    cursor = leads_col.find({})
+    leads = await cursor.to_list(length=None)
     total = len(leads)
 
     if total == 0:
@@ -23,21 +22,22 @@ def get_analytics(db: Session) -> dict:
             "potential_business_value": 0.0,
         }
 
-    high = sum(1 for l in leads if l.priority == "High")
-    medium = sum(1 for l in leads if l.priority == "Medium")
-    low = sum(1 for l in leads if l.priority == "Low")
+    high = sum(1 for l in leads if l.get("priority") == "High")
+    medium = sum(1 for l in leads if l.get("priority") == "Medium")
+    low = sum(1 for l in leads if l.get("priority") == "Low")
 
-    avg_score = round(sum(l.ai_score for l in leads) / total, 2)
-    avg_conv = round(sum(l.conversion_probability for l in leads) / total, 4)
+    avg_score = round(sum(l.get("ai_score", 0.0) for l in leads) / total, 2)
+    avg_conv = round(sum(l.get("conversion_probability", 0.0) for l in leads) / total, 4)
 
     loan_dist: dict[str, int] = {}
     for l in leads:
-        loan_dist[l.recommended_loan] = loan_dist.get(l.recommended_loan, 0) + 1
+        loan = l.get("recommended_loan", "")
+        loan_dist[loan] = loan_dist.get(loan, 0) + 1
 
     # AI qualified: ai_score >= 65
-    ai_qualified = sum(1 for l in leads if l.ai_score >= 65)
+    ai_qualified = sum(1 for l in leads if l.get("ai_score", 0.0) >= 65)
     # Traditional CIBIL qualified: cibil_score >= 700
-    cibil_qualified = sum(1 for l in leads if l.cibil_score >= 700)
+    cibil_qualified = sum(1 for l in leads if l.get("cibil_score", 0) >= 700)
     improvement_pct = (
         round((ai_qualified - cibil_qualified) / cibil_qualified * 100, 1)
         if cibil_qualified > 0 else 0.0

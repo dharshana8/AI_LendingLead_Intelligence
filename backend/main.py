@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import csv
 import io
@@ -11,15 +10,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import models
-from database import engine, get_db
+from database import leads_col, users_col, get_next_sequence_value
 from schemas import CustomerCreate, CustomerUpdate, CustomerResponse, AnalyticsResponse
 from crud import create_lead, get_leads, get_lead, delete_lead, update_lead
 from analytics import get_analytics
 from predict import _load_artefacts
 from sample_data import SAMPLE_CUSTOMERS
 
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="AI Lending Lead Intelligence API",
@@ -36,8 +33,10 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     _load_artefacts()
+    await _seed_users()
+    await _seed_customers()
 
 
 @app.get("/health")
@@ -46,11 +45,41 @@ def health():
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-USERS_DB = [
-    {"id": 1, "employeeId": "RM001", "password": "password123", "name": "Ankit Sharma", "role": "rm", "branch": "Mumbai Main", "email": "ankit.sharma@idbi.co.in", "phone": "+91 98765 43210", "avatar": "AS", "joined": "Jan 2022", "performance": 92},
-    {"id": 2, "employeeId": "BM001", "password": "password123", "name": "Priya Mehta", "role": "bm", "branch": "Delhi Central", "email": "priya.mehta@idbi.co.in", "phone": "+91 98765 43211", "avatar": "PM", "joined": "Mar 2019", "performance": 88},
-    {"id": 3, "employeeId": "ADM001", "password": "admin123", "name": "Rajiv Nair", "role": "admin", "branch": "HQ Mumbai", "email": "rajiv.nair@idbi.co.in", "phone": "+91 98765 43212", "avatar": "RN", "joined": "Jun 2015", "performance": 96},
+DEFAULT_USERS = [
+    {"employee_id": "RM001",  "password": "password123", "name": "Ankit Sharma", "role": "rm",    "branch": "Mumbai Main",  "email": "ankit.sharma@idbi.co.in", "phone": "+91 98765 43210", "avatar": "AS", "joined": "Jan 2022", "performance": 92},
+    {"employee_id": "BM001",  "password": "password123", "name": "Priya Mehta",  "role": "bm",    "branch": "Delhi Central", "email": "priya.mehta@idbi.co.in",  "phone": "+91 98765 43211", "avatar": "PM", "joined": "Mar 2019", "performance": 88},
+    {"employee_id": "ADM001", "password": "admin123",    "name": "Rajiv Nair",   "role": "admin", "branch": "HQ Mumbai",     "email": "rajiv.nair@idbi.co.in",   "phone": "+91 98765 43212", "avatar": "RN", "joined": "Jun 2015", "performance": 96},
 ]
+
+
+async def _seed_users():
+    for u in DEFAULT_USERS:
+        exists = await users_col.find_one({"employee_id": u["employee_id"]})
+        if not exists:
+            uid = await get_next_sequence_value("user_id")
+            await users_col.insert_one({**u, "id": uid})
+
+
+async def _seed_customers() -> list[dict]:
+    """Seed sample customers only when the leads collection is empty."""
+    if await leads_col.count_documents({}) > 0:
+        return await get_leads()
+    return await _insert_sample_customers()
+
+
+async def _insert_sample_customers() -> list[dict]:
+    results = []
+    for customer in SAMPLE_CUSTOMERS:
+        payload = CustomerCreate(**customer)
+        res = await create_lead(payload)
+        results.append(res)
+    return results
+
+
+def _user_dict(u: dict):
+    return {"id": u.get("id"), "employeeId": u.get("employee_id"), "name": u.get("name"), "role": u.get("role"),
+            "branch": u.get("branch"), "email": u.get("email"), "phone": u.get("phone"),
+            "avatar": u.get("avatar"), "joined": u.get("joined"), "performance": u.get("performance")}
 
 
 class LoginRequest(BaseModel):
@@ -69,20 +98,25 @@ class RegisterRequest(BaseModel):
 
 
 @app.post("/login")
-def login(payload: LoginRequest):
-    user = next((u for u in USERS_DB if u["employeeId"] == payload.employeeId and u["password"] == payload.password), None)
+async def login(payload: LoginRequest):
+    user = await users_col.find_one({
+        "employee_id": payload.employeeId,
+        "password": payload.password
+    })
     if not user:
         raise HTTPException(status_code=401, detail="Invalid Employee ID or Password")
-    return {k: v for k, v in user.items() if k != "password"}
+    return _user_dict(user)
 
 
 @app.post("/register", status_code=201)
-def register(payload: RegisterRequest):
-    if any(u["employeeId"] == payload.employeeId for u in USERS_DB):
+async def register(payload: RegisterRequest):
+    existing = await users_col.find_one({"employee_id": payload.employeeId})
+    if existing:
         raise HTTPException(status_code=409, detail="Employee ID already exists")
+    uid = await get_next_sequence_value("user_id")
     new_user = {
-        "id": len(USERS_DB) + 1,
-        "employeeId": payload.employeeId,
+        "id": uid,
+        "employee_id": payload.employeeId,
         "password": payload.password,
         "name": payload.name,
         "role": payload.role,
@@ -93,66 +127,73 @@ def register(payload: RegisterRequest):
         "joined": "2025",
         "performance": 75,
     }
-    USERS_DB.append(new_user)
-    return {k: v for k, v in new_user.items() if k != "password"}
+    await users_col.insert_one(new_user)
+    return _user_dict(new_user)
 
 
 # ── Customers ─────────────────────────────────────────────────────────────────
 @app.post("/customers", response_model=CustomerResponse, status_code=201)
-def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
-    return create_lead(db, payload)
+async def create_customer(payload: CustomerCreate):
+    return await create_lead(payload)
 
 
 @app.get("/customers", response_model=list[CustomerResponse])
-def list_customers(
+async def list_customers(
     priority: str | None = Query(default=None, pattern="^(High|Medium|Low)$"),
-    db: Session = Depends(get_db),
 ):
-    return get_leads(db, priority)
+    return await get_leads(priority)
 
 
 @app.get("/customers/{customer_id}", response_model=CustomerResponse)
-def get_customer(customer_id: int, db: Session = Depends(get_db)):
-    lead = get_lead(db, customer_id)
+async def get_customer(customer_id: int):
+    lead = await get_lead(customer_id)
     if not lead:
         raise HTTPException(status_code=404, detail="Customer not found.")
     return lead
 
 
 @app.delete("/customers/{customer_id}", status_code=204)
-def remove_customer(customer_id: int, db: Session = Depends(get_db)):
-    if not delete_lead(db, customer_id):
+async def remove_customer(customer_id: int):
+    if not await delete_lead(customer_id):
         raise HTTPException(status_code=404, detail="Customer not found.")
 
 
 @app.put("/customers/{customer_id}", response_model=CustomerResponse)
-def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
-    lead = update_lead(db, customer_id, payload)
+async def update_customer(customer_id: int, payload: CustomerUpdate):
+    lead = await update_lead(customer_id, payload)
     if not lead:
         raise HTTPException(status_code=404, detail="Customer not found.")
     return lead
 
 
-@app.post("/load-sample", response_model=list[CustomerResponse], status_code=201)
-def load_sample(db: Session = Depends(get_db)):
-    results = []
-    for customer in SAMPLE_CUSTOMERS:
-        payload = CustomerCreate(**customer)
-        results.append(create_lead(db, payload))
-    return results
+@app.post("/load-sample", response_model=list[CustomerResponse])
+async def load_sample(force: bool = Query(default=False)):
+    """Load sample customers. Skips if data already exists unless force=true."""
+    if not force and await leads_col.count_documents({}) > 0:
+        return await get_leads()
+    if force:
+        await leads_col.delete_many({})
+    return await _insert_sample_customers()
 
 
 @app.get("/export")
-def export_csv(db: Session = Depends(get_db)):
-    leads = get_leads(db)
+async def export_csv():
+    leads = await get_leads()
     output = io.StringIO()
-    fields = ["customer_id", "name", "age", "occupation", "cibil_score", "income",
-              "ai_score", "conversion_probability", "priority", "recommended_loan",
-              "top_signal", "status", "assigned_to", "last_contact", "created_at"]
+    fields = [
+        "customer_id", "name", "age", "occupation", "cibil_score",
+        "monthly_credit_1", "monthly_credit_2", "monthly_credit_3",
+        "monthly_credit_4", "monthly_credit_5", "monthly_credit_6",
+        "emi_debits", "cc_spend", "credit_limit", "account_balance",
+        "existing_loan_count", "years_of_experience", "loan_page_visits",
+        "income", "salary_regularity", "emi_burden", "savings_ratio",
+        "ai_score", "conversion_probability", "priority", "recommended_loan",
+        "top_signal", "status", "assigned_to", "last_contact", "created_at",
+    ]
     writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
     for lead in leads:
-        row = {f: getattr(lead, f, "") for f in fields}
+        row = {f: lead.get(f, "") for f in fields}
         writer.writerow(row)
     output.seek(0)
     return StreamingResponse(
@@ -163,8 +204,8 @@ def export_csv(db: Session = Depends(get_db)):
 
 
 @app.get("/analytics", response_model=AnalyticsResponse)
-def analytics(db: Session = Depends(get_db)):
-    return get_analytics(db)
+async def analytics():
+    return await get_analytics()
 
 
 # ── Groq AI Chat ──────────────────────────────────────────────────────────────
@@ -174,24 +215,24 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chat")
-def chat(payload: ChatRequest, db: Session = Depends(get_db)):
+async def chat(payload: ChatRequest):
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="GROQ_API_KEY not configured")
 
     # Build live customer context from DB
-    leads = get_leads(db)
+    leads = await get_leads()
     top5 = leads[:5]
     lead_summary = "\n".join(
-        f"- {l.name} | {l.occupation} | AI Score: {l.ai_score:.0f} | "
-        f"Priority: {l.priority} | Loan: {l.recommended_loan} | "
-        f"Income: Rs{l.income:,.0f} | CIBIL: {l.cibil_score} | "
-        f"Conversion: {l.conversion_probability*100:.0f}%"
+        f"- {l.get('name')} | {l.get('occupation')} | AI Score: {l.get('ai_score', 0.0):.0f} | "
+        f"Priority: {l.get('priority')} | Loan: {l.get('recommended_loan')} | "
+        f"Income: Rs{l.get('income', 0.0):,.0f} | CIBIL: {l.get('cibil_score')} | "
+        f"Conversion: {l.get('conversion_probability', 0.0)*100:.0f}%"
         for l in top5
     )
     total = len(leads)
-    high = sum(1 for l in leads if l.priority == "High")
-    avg_score = round(sum(l.ai_score for l in leads) / total, 1) if total else 0
+    high = sum(1 for l in leads if l.get("priority") == "High")
+    avg_score = round(sum(l.get("ai_score", 0.0) for l in leads) / total, 1) if total else 0
 
     system_prompt = f"""You are an AI assistant for IDBI Bank's Lending Lead Intelligence platform.
 You help Relationship Managers identify, prioritize, and convert high-value loan leads.
@@ -224,3 +265,4 @@ Guidelines:
         temperature=0.7,
     )
     return {"reply": response.choices[0].message.content}
+

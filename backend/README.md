@@ -24,7 +24,7 @@ FastAPI (main.py)
       ├── loan_engine.py          → Priority, loan recommendation, explainability
       ├── crud.py                 → DB read/write with auto-enrichment
       ├── analytics.py            → Aggregated business metrics
-      └── database.py / models.py → SQLite via SQLAlchemy ORM
+      └── database.py / models.py → MongoDB (Motor async driver)
 ```
 
 ---
@@ -54,9 +54,13 @@ FastAPI (main.py)
 
 ## Database
 
-- Engine: SQLite (`leads.db`)
-- ORM: SQLAlchemy 2.0
-- Table: `leads` — stores raw inputs, derived features, and ML predictions
+- Engine: MongoDB (`idbi_lending` database)
+- Driver: Motor (async) + PyMongo
+- Collections:
+  - `leads` — raw inputs, derived features, ML predictions, CRM fields
+  - `users` — employee accounts (auto-seeded on startup)
+  - `counters` — auto-increment IDs for `customer_id` and `user_id`
+- Sample customers (20 records) are auto-seeded on first startup when `leads` is empty
 
 ---
 
@@ -70,7 +74,7 @@ FastAPI (main.py)
 | GET    | /customers/{id}       | Get single customer                  |
 | PUT    | /customers/{id}       | Update + re-score                    |
 | DELETE | /customers/{id}       | Delete customer                      |
-| POST   | /load-sample          | Load 20 realistic Indian customers   |
+| POST   | /load-sample          | Load sample customers (skips if DB has data; use `?force=true` to reset) |
 | GET    | /analytics            | Business analytics dashboard data    |
 
 ---
@@ -82,7 +86,8 @@ cd backend
 python -m venv venv
 venv\Scripts\activate        # Windows
 pip install -r requirements.txt
-cp .env.example .env
+cp .env.example .env           # Set MONGO_URL if not using local MongoDB
+# Ensure MongoDB is running locally, or point MONGO_URL to Atlas
 python -m uvicorn main:app --reload --port 8000
 ```
 
@@ -128,6 +133,3 @@ API docs available at: http://localhost:8000/docs
 - Replace synthetic training data with real anonymized bank data
 - Add JWT authentication for API security
 - Integrate with CRM systems (Salesforce, Zoho)
-- Add real-time lead alerts via WebSocket
-- Build model retraining pipeline with feedback loop
-- Add PostgreSQL support for production scale

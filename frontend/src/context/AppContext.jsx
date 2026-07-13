@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics } from "../services/api";
+import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics, apiCreateCustomer } from "../services/api";
 import api from "../services/api";
 
 const AppContext = createContext(null);
@@ -68,6 +68,12 @@ export function AppProvider({ children }) {
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
+  const createCustomer = useCallback(async (payload) => {
+    const created = await apiCreateCustomer(payload);
+    await fetchCustomers();
+    return created;
+  }, [fetchCustomers]);
+
   const loadSample = useCallback(async () => {
     await apiLoadSample();
     await fetchCustomers();
@@ -127,7 +133,7 @@ export function AppProvider({ children }) {
       toasts, addToast,
       sidebarCollapsed, setSidebarCollapsed,
       customers, analytics, dataLoading, dataError,
-      refetch: fetchCustomers, loadSample, exportCSV,
+      refetch: fetchCustomers, createCustomer, loadSample, exportCSV,
     }}>
       {children}
     </AppContext.Provider>

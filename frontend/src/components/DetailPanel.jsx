@@ -102,6 +102,120 @@ function btnStyle(bg, color) {
   };
 }
 
+function fmtCurrency(v) {
+  if (v === undefined || v === null || v === "") return "—";
+  return `₹${Number(v).toLocaleString("en-IN")}`;
+}
+
+function fmtPct(v) {
+  if (v === undefined || v === null || v === "") return "—";
+  const n = Number(v);
+  return n <= 1 ? `${(n * 100).toFixed(1)}%` : `${n.toFixed(1)}%`;
+}
+
+function RecordSection({ title, rows }) {
+  return (
+    <div style={{ marginBottom: "10px" }}>
+      <div style={{ fontSize: "10px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>{title}</div>
+      {rows.map(([label, value]) => (
+        <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: "8px", padding: "4px 0", borderBottom: "1px solid #f3f4f6" }}>
+          <span style={{ fontSize: "11px", color: "#6b7280", flexShrink: 0 }}>{label}</span>
+          <span style={{ fontSize: "11px", fontWeight: "600", color: "#111827", textAlign: "right", wordBreak: "break-word" }}>{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CustomerRecordCard({ lead }) {
+  const [open, setOpen] = useState(false);
+  const raw = lead._raw || {};
+  const created = raw.created_at ? String(raw.created_at).split("T")[0] : "—";
+
+  const sections = [
+    {
+      title: "Personal",
+      rows: [
+        ["Customer ID", raw.customer_id ?? lead.id ?? "—"],
+        ["Name", raw.name ?? lead.name],
+        ["Age", raw.age ?? "—"],
+        ["Occupation", raw.occupation ?? lead.occupation],
+        ["CIBIL Score", raw.cibil_score ?? lead.cibil],
+      ],
+    },
+    {
+      title: "Financial Inputs",
+      rows: [
+        ["Monthly Credit 1", fmtCurrency(raw.monthly_credit_1)],
+        ["Monthly Credit 2", fmtCurrency(raw.monthly_credit_2)],
+        ["Monthly Credit 3", fmtCurrency(raw.monthly_credit_3)],
+        ["Monthly Credit 4", fmtCurrency(raw.monthly_credit_4)],
+        ["Monthly Credit 5", fmtCurrency(raw.monthly_credit_5)],
+        ["Monthly Credit 6", fmtCurrency(raw.monthly_credit_6)],
+        ["EMI Debits", fmtCurrency(raw.emi_debits)],
+        ["CC Spend", fmtCurrency(raw.cc_spend)],
+        ["Credit Limit", fmtCurrency(raw.credit_limit)],
+        ["Account Balance", fmtCurrency(raw.account_balance)],
+        ["Existing Loans", raw.existing_loan_count ?? "—"],
+        ["Years of Experience", raw.years_of_experience ?? "—"],
+        ["Loan Page Visits", raw.loan_page_visits ?? "—"],
+      ],
+    },
+    {
+      title: "Derived Features",
+      rows: [
+        ["Income", fmtCurrency(raw.income ?? lead.income)],
+        ["Salary Regularity", fmtPct(raw.salary_regularity)],
+        ["EMI Burden", fmtPct(raw.emi_burden)],
+        ["Savings Ratio", fmtPct(raw.savings_ratio)],
+        ["Credit Health", fmtPct(raw.credit_health)],
+        ["Intent Score", fmtPct(raw.intent_score)],
+        ["Repayment Capacity", fmtCurrency(raw.repayment_capacity)],
+        ["Debt Ratio", fmtPct(raw.debt_ratio)],
+      ],
+    },
+    {
+      title: "AI & CRM",
+      rows: [
+        ["AI Score", raw.ai_score ?? lead.aiScore],
+        ["Conversion", fmtPct(raw.conversion_probability ?? lead.conversion / 100)],
+        ["Priority", raw.priority ?? lead.priority],
+        ["Recommended Loan", raw.recommended_loan ?? lead.loan],
+        ["Top Signal", raw.top_signal ?? lead.signal],
+        ["Status", raw.status ?? lead.status ?? "New"],
+        ["Assigned To", raw.assigned_to || lead.assignedTo || "Unassigned"],
+        ["Last Contact", raw.last_contact || lead.lastContact || "—"],
+        ["Created", created],
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ background: "#f9fafb", borderRadius: "10px", border: "1px solid #e5e7eb", overflow: "hidden" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", padding: "12px 14px", border: "none", background: "transparent",
+          display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: "12px", fontWeight: "700", color: "#374151" }}>📋 Full Customer Record</span>
+        <span style={{ fontSize: "12px", color: "#6b7280" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 14px 14px", maxHeight: "320px", overflowY: "auto" }}>
+          {sections.map(s => <RecordSection key={s.title} title={s.title} rows={s.rows} />)}
+          {raw.explanation && (
+            <div style={{ marginTop: "8px", padding: "8px", background: "#eff6ff", borderRadius: "6px", fontSize: "11px", color: "#1e3a8a", lineHeight: 1.5 }}>
+              {raw.explanation}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DetailPanel({ lead, onClose, onRefresh }) {
   const { addToast } = useApp();
 
@@ -186,6 +300,7 @@ export default function DetailPanel({ lead, onClose, onRefresh }) {
 
           <WhyCard lead={lead} />
           <OutreachCard lead={lead} />
+          <CustomerRecordCard lead={lead} />
 
           {/* Initiate Outreach */}
           <button style={{

@@ -19,7 +19,8 @@ function Avatar({ name, size = 38 }) {
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Applied", "Converted"];
 
 export default function CustomersPage() {
-  const { darkMode, addToast, customers, exportCSV } = useApp();
+  const { darkMode, addToast, customers, exportCSV, refetch, createCustomer } = useApp();
+  const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -36,15 +37,8 @@ export default function CustomersPage() {
   const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
   const rowHoverBg = darkMode ? "#1e3a5f" : "#eff6ff";
 
-  const enriched = useMemo(() => customers.map((l, i) => ({
-    ...l,
-    status: STATUS_OPTIONS[1 + (i % (STATUS_OPTIONS.length - 1))],
-    lastContact: `${(i % 28) + 1} Jun 2025`,
-    assignedTo: ["Ankit Sharma", "Priya Mehta", "Ravi Kumar"][i % 3],
-  })), [customers]);
-
   const filtered = useMemo(() => {
-    let data = enriched;
+    let data = customers;
     if (priorityFilter !== "All") data = data.filter(l => l.priority === priorityFilter);
     if (statusFilter !== "All") data = data.filter(l => l.status === statusFilter);
     if (search.trim()) {
@@ -55,7 +49,7 @@ export default function CustomersPage() {
       );
     }
     return data;
-  }, [enriched, priorityFilter, statusFilter, search]);
+  }, [customers, priorityFilter, statusFilter, search]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -91,7 +85,7 @@ export default function CustomersPage() {
               <ActionBtn label="Delete" color="#ef4444" onClick={() => { addToast("Customers removed from view", "warning"); setSelectedRows([]); }} />
             </>
           )}
-          <ActionBtn label="+ Add Customer" color="#1e40af" onClick={() => addToast("Add customer form coming soon", "info")} primary />
+          <ActionBtn label="+ Add Customer" color="#1e40af" onClick={() => setShowAddModal(true)} primary />
           <ActionBtn label="📤 Export CSV" color="#374151" onClick={() => exportCSV().then(() => addToast("Export downloaded", "success")).catch(() => addToast("Export failed", "error"))} />
         </div>
       </div>
@@ -172,7 +166,22 @@ export default function CustomersPage() {
         </div>
       )}
 
-      <DetailPanel lead={selected} onClose={() => setSelected(null)} />
+      <DetailPanel lead={selected} onClose={() => setSelected(null)} onRefresh={refetch} />
+      {showAddModal && (
+        <AddCustomerModal
+          darkMode={darkMode}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={async (payload) => {
+            try {
+              await createCustomer(payload);
+              addToast("Customer added successfully!", "success");
+              setShowAddModal(false);
+            } catch (e) {
+              addToast(e?.response?.data?.detail || "Failed to add customer", "error");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -309,6 +318,217 @@ function Pagination({ page, totalPages, total, pageSize, onPage, darkMode, cardB
               }}>{p}</button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+const EMPTY_FORM = {
+  name: "", age: "", occupation: "", cibil_score: "",
+  monthly_credit_1: "", monthly_credit_2: "", monthly_credit_3: "",
+  monthly_credit_4: "", monthly_credit_5: "", monthly_credit_6: "",
+  emi_debits: "", cc_spend: "", credit_limit: "", loan_page_visits: "",
+  existing_loan_count: "", years_of_experience: "", account_balance: "",
+};
+
+function AddCustomerModal({ darkMode, onClose, onSubmit }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [step, setStep] = useState("form"); // "form" | "review"
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const bg = darkMode ? "#1e293b" : "#fff";
+  const border = darkMode ? "#334155" : "#e5e7eb";
+  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
+  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+  const inputBg = darkMode ? "#0f172a" : "#f9fafb";
+
+  const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: "" })); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Required";
+    const age = parseInt(form.age); if (!age || age < 18 || age > 80) e.age = "18–80";
+    if (!form.occupation.trim()) e.occupation = "Required";
+    const cibil = parseInt(form.cibil_score); if (!cibil || cibil < 300 || cibil > 900) e.cibil_score = "300–900";
+    const credits = [form.monthly_credit_1, form.monthly_credit_2, form.monthly_credit_3,
+      form.monthly_credit_4, form.monthly_credit_5, form.monthly_credit_6];
+    if (credits.filter(c => parseFloat(c) > 0).length < 3) e.monthly_credit_1 = "At least 3 months must be non-zero";
+    if (!form.credit_limit || parseFloat(form.credit_limit) <= 0) e.credit_limit = "Must be > 0";
+    return e;
+  };
+
+  const handleReview = () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setStep("review");
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    const payload = {
+      name: form.name.trim(),
+      age: parseInt(form.age),
+      occupation: form.occupation.trim(),
+      cibil_score: parseInt(form.cibil_score),
+      monthly_credit_1: parseFloat(form.monthly_credit_1) || 0,
+      monthly_credit_2: parseFloat(form.monthly_credit_2) || 0,
+      monthly_credit_3: parseFloat(form.monthly_credit_3) || 0,
+      monthly_credit_4: parseFloat(form.monthly_credit_4) || 0,
+      monthly_credit_5: parseFloat(form.monthly_credit_5) || 0,
+      monthly_credit_6: parseFloat(form.monthly_credit_6) || 0,
+      emi_debits: parseFloat(form.emi_debits) || 0,
+      cc_spend: parseFloat(form.cc_spend) || 0,
+      credit_limit: parseFloat(form.credit_limit) || 1,
+      loan_page_visits: parseInt(form.loan_page_visits) || 0,
+      existing_loan_count: parseInt(form.existing_loan_count) || 0,
+      years_of_experience: parseInt(form.years_of_experience) || 0,
+      account_balance: parseFloat(form.account_balance) || 0,
+    };
+    await onSubmit(payload);
+    setSubmitting(false);
+  };
+
+  const inputStyle = (k) => ({
+    width: "100%", padding: "8px 10px", border: `1.5px solid ${errors[k] ? "#ef4444" : border}`,
+    borderRadius: "7px", fontSize: "13px", background: inputBg, color: textPrimary, outline: "none",
+    boxSizing: "border-box",
+  });
+
+  const Field = ({ label, k, type = "text", placeholder = "" }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary, textTransform: "uppercase" }}>{label}</label>
+      <input type={type} value={form[k]} placeholder={placeholder}
+        onChange={e => set(k, e.target.value)}
+        style={inputStyle(k)} />
+      {errors[k] && <span style={{ fontSize: "11px", color: "#ef4444" }}>{errors[k]}</span>}
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div style={{ background: bg, borderRadius: "16px", width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: textPrimary }}>
+              {step === "form" ? "Add New Customer" : "Review Customer Details"}
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: textSecondary }}>
+              {step === "form" ? "Fill in the customer's financial details" : "Confirm before saving to database"}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: textSecondary }}>✕</button>
+        </div>
+
+        <div style={{ padding: "20px 24px" }}>
+          {step === "form" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Basic Info */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                <Field label="Full Name" k="name" placeholder="e.g. Priya Sharma" />
+                <Field label="Age" k="age" type="number" placeholder="18–80" />
+                <Field label="Occupation" k="occupation" placeholder="e.g. Software Engineer" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <Field label="CIBIL Score" k="cibil_score" type="number" placeholder="300–900" />
+                <Field label="Account Balance (₹)" k="account_balance" type="number" placeholder="0" />
+              </div>
+
+              {/* Monthly Credits */}
+              <div>
+                <p style={{ margin: "0 0 8px", fontSize: "12px", fontWeight: "700", color: textSecondary, textTransform: "uppercase" }}>
+                  Monthly Salary Credits — at least 3 must be non-zero
+                </p>
+                {errors.monthly_credit_1 && <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#ef4444" }}>{errors.monthly_credit_1}</p>}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+                  {[1,2,3,4,5,6].map(n => (
+                    <div key={n} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary }}>Month {n} (₹)</label>
+                      <input type="number" value={form[`monthly_credit_${n}`]} placeholder="0"
+                        onChange={e => set(`monthly_credit_${n}`, e.target.value)}
+                        style={inputStyle(`monthly_credit_${n}`)} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Financial Details */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                <Field label="EMI Debits/mo (₹)" k="emi_debits" type="number" placeholder="0" />
+                <Field label="CC Spend/mo (₹)" k="cc_spend" type="number" placeholder="0" />
+                <Field label="Credit Limit (₹)" k="credit_limit" type="number" placeholder="1" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                <Field label="Loan Page Visits" k="loan_page_visits" type="number" placeholder="0" />
+                <Field label="Existing Loans" k="existing_loan_count" type="number" placeholder="0" />
+                <Field label="Years of Experience" k="years_of_experience" type="number" placeholder="0" />
+              </div>
+            </div>
+          ) : (
+            /* Review Step */
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "16px", border: `1px solid ${border}` }}>
+                <p style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: textPrimary }}>Basic Information</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  {[["Name", form.name], ["Age", form.age], ["Occupation", form.occupation], ["CIBIL Score", form.cibil_score], ["Account Balance", `₹${parseFloat(form.account_balance || 0).toLocaleString("en-IN")}`]].map(([k, v]) => (
+                    <div key={k}>
+                      <div style={{ fontSize: "10px", color: textSecondary, textTransform: "uppercase", fontWeight: "600" }}>{k}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "700", color: textPrimary }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "16px", border: `1px solid ${border}` }}>
+                <p style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: textPrimary }}>Monthly Credits (₹)</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px" }}>
+                  {[1,2,3,4,5,6].map(n => (
+                    <div key={n} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", color: textSecondary }}>M{n}</div>
+                      <div style={{ fontSize: "13px", fontWeight: "700", color: parseFloat(form[`monthly_credit_${n}`]) > 0 ? "#15803d" : textSecondary }}>
+                        {parseFloat(form[`monthly_credit_${n}`] || 0).toLocaleString("en-IN")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "16px", border: `1px solid ${border}` }}>
+                <p style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: textPrimary }}>Financial Details</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+                  {[["EMI Debits", `₹${parseFloat(form.emi_debits||0).toLocaleString("en-IN")}`], ["CC Spend", `₹${parseFloat(form.cc_spend||0).toLocaleString("en-IN")}`], ["Credit Limit", `₹${parseFloat(form.credit_limit||0).toLocaleString("en-IN")}`], ["Loan Page Visits", form.loan_page_visits||0], ["Existing Loans", form.existing_loan_count||0], ["Yrs Experience", form.years_of_experience||0]].map(([k, v]) => (
+                    <div key={k}>
+                      <div style={{ fontSize: "10px", color: textSecondary, textTransform: "uppercase", fontWeight: "600" }}>{k}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "700", color: textPrimary }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ background: "#eff6ff", borderRadius: "8px", padding: "12px 14px", border: "1px solid #bfdbfe" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "#1e40af", fontWeight: "600" }}>
+                  ✅ AI scoring, loan recommendation, and priority will be calculated automatically after submission.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          {step === "review" && (
+            <ActionBtn label="← Edit" color="#6b7280" onClick={() => setStep("form")} />
+          )}
+          <ActionBtn label="Cancel" color="#6b7280" onClick={onClose} />
+          {step === "form" ? (
+            <ActionBtn label="Review →" color="#1e40af" onClick={handleReview} primary />
+          ) : (
+            <ActionBtn
+              label={submitting ? "Saving..." : "✓ Save to Database"}
+              color="#15803d"
+              onClick={handleSubmit}
+              primary
+            />
+          )}
+        </div>
       </div>
     </div>
   );
