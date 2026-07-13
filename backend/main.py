@@ -5,6 +5,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import csv
 import io
+import os
+from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import models
 from database import engine, get_db
@@ -160,3 +165,62 @@ def export_csv(db: Session = Depends(get_db)):
 @app.get("/analytics", response_model=AnalyticsResponse)
 def analytics(db: Session = Depends(get_db)):
     return get_analytics(db)
+
+
+# ── Groq AI Chat ──────────────────────────────────────────────────────────────
+class ChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []
+
+
+@app.post("/chat")
+def chat(payload: ChatRequest, db: Session = Depends(get_db)):
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY not configured")
+
+    # Build live customer context from DB
+    leads = get_leads(db)
+    top5 = leads[:5]
+    lead_summary = "\n".join(
+        f"- {l.name} | {l.occupation} | AI Score: {l.ai_score:.0f} | "
+        f"Priority: {l.priority} | Loan: {l.recommended_loan} | "
+        f"Income: Rs{l.income:,.0f} | CIBIL: {l.cibil_score} | "
+        f"Conversion: {l.conversion_probability*100:.0f}%"
+        for l in top5
+    )
+    total = len(leads)
+    high = sum(1 for l in leads if l.priority == "High")
+    avg_score = round(sum(l.ai_score for l in leads) / total, 1) if total else 0
+
+    system_prompt = f"""You are an AI assistant for IDBI Bank's Lending Lead Intelligence platform.
+You help Relationship Managers identify, prioritize, and convert high-value loan leads.
+
+Current portfolio snapshot:
+- Total customers: {total}
+- High priority leads: {high}
+- Average AI score: {avg_score}
+
+Top leads right now:
+{lead_summary}
+
+Guidelines:
+- Be concise, actionable, and specific to IDBI Bank context
+- Use Indian currency (Rs) and Indian banking terminology
+- Reference actual customer data above when relevant
+- Suggest specific outreach strategies and loan products
+- Keep responses focused on lending lead intelligence"""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for h in payload.history[-10:]:  # last 10 messages for context
+        messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": payload.message})
+
+    client = Groq(api_key=api_key)
+    response = client.chat.completions.create(
+        model="llama3-8b-8192",
+        messages=messages,
+        max_tokens=1024,
+        temperature=0.7,
+    )
+    return {"reply": response.choices[0].message.content}
