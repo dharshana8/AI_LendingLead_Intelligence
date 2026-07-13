@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+import csv
+import io
 
 import models
 from database import engine, get_db
@@ -78,6 +81,26 @@ def load_sample(db: Session = Depends(get_db)):
         payload = CustomerCreate(**customer)
         results.append(create_lead(db, payload))
     return results
+
+
+@app.get("/export")
+def export_csv(db: Session = Depends(get_db)):
+    leads = get_leads(db)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Name", "Age", "Occupation", "CIBIL Score", "Income",
+                     "AI Score", "Conversion Probability", "Priority", "Recommended Loan",
+                     "Top Signal", "Explanation", "Created At"])
+    for l in leads:
+        writer.writerow([l.customer_id, l.name, l.age, l.occupation, l.cibil_score,
+                         l.income, l.ai_score, l.conversion_probability, l.priority,
+                         l.recommended_loan, l.top_signal, l.explanation, l.created_at])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=idbi_leads_export.csv"},
+    )
 
 
 @app.get("/analytics", response_model=AnalyticsResponse)
