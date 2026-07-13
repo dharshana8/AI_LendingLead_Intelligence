@@ -66,13 +66,11 @@ export function AppProvider({ children }) {
   }, []);
 
   const login = useCallback(async (employeeId, password) => {
-    // Try backend first
     try {
       const res = await api.post("/login", { employeeId, password });
       setUser(res.data);
       return { success: true };
     } catch (e) {
-      // Fallback to mock users if backend is down
       const found = MOCK_USERS.find(u => u.employeeId === employeeId && u.password === password);
       if (found) { setUser(found); return { success: true }; }
       const msg = e?.response?.data?.detail || "Invalid Employee ID or Password";

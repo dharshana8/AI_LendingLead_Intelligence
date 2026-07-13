@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/LandingPage"; // kept for reference
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
@@ -58,27 +58,22 @@ function SkeletonLoader({ darkMode }) {
 
 function AppShell() {
   const { user, darkMode } = useApp();
-  const [screen, setScreen] = useState("landing"); // landing | login | app
   const [activePage, setActivePage] = useState("dashboard");
   const [loading, setLoading] = useState(false);
 
-  // When user logs in, show loading then app
   useEffect(() => {
-    if (user && screen !== "app") {
+    if (user && !loading) {
       setLoading(true);
-      const t = setTimeout(() => { setLoading(false); setScreen("app"); }, 1600);
+      const t = setTimeout(() => setLoading(false), 1400);
       return () => clearTimeout(t);
     }
-    if (!user && screen === "app") setScreen("landing");
-  }, [user, screen]);
+  }, [user]);
 
   const bg = darkMode ? "#0f172a" : "#f5f7fb";
   const font = "'Inter','Segoe UI',system-ui,-apple-system,sans-serif";
 
+  if (!user) return <LoginPage />;
   if (loading) return <SkeletonLoader darkMode={darkMode} />;
-
-  if (screen === "landing") return <LandingPage onLogin={() => setScreen("login")} />;
-  if (screen === "login") return <LoginPage onBack={() => setScreen("landing")} />;
 
   // APP SHELL
   return (
