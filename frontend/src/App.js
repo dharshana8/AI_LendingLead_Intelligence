@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
-import LandingPage from "./pages/LandingPage"; // kept for reference
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
@@ -62,12 +61,12 @@ function AppShell() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user) {
       setLoading(true);
       const t = setTimeout(() => setLoading(false), 1400);
       return () => clearTimeout(t);
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const bg = darkMode ? "#0f172a" : "#f5f7fb";
   const font = "'Inter','Segoe UI',system-ui,-apple-system,sans-serif";
