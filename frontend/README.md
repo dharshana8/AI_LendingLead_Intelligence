@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# IDBI Bank — AI Lending Lead Intelligence · Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React dashboard for IDBI Bank's AI-powered Lending Lead Intelligence Platform. Helps Relationship Managers identify, score, and convert high-value loan leads using real-time ML predictions.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## How to Run Locally
 
-### `npm start`
+```bash
+cd frontend
+npm install
+npm start
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- App runs at: http://localhost:3000  
+- Backend must be running at: http://localhost:8000  
+- See `backend/README.md` to start the backend
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Pages
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+| Page              | Route         | Description                                              |
+|-------------------|---------------|----------------------------------------------------------|
+| Login             | /login        | Employee sign-in and registration                        |
+| Dashboard         | /dashboard    | KPI cards, lead table, AI vs CIBIL comparison            |
+| Lead Intelligence | /leads        | Full lead list with priority filters                     |
+| Customers         | /customers    | Customer management — add, view, filter, export          |
+| Analytics         | /analytics    | Portfolio charts, funnel, loan distribution              |
+| AI Assistant      | /ai-assistant | Groq-powered chat with live portfolio context            |
+| Follow-ups        | /followups    | Scheduled follow-up tracker                              |
+| Reports           | /reports      | Exportable reports                                       |
+| Profile           | /profile      | Employee profile                                         |
+| Settings          | /settings     | App preferences                                          |
+| Admin — Users     | /admin-users  | User management (Admin only)                             |
+| Admin — Branches  | /admin-branches | Branch performance (Admin only)                        |
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Key Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **AI Lead Scoring** — Every customer gets an AI Score (0–100) and conversion probability from the ML backend
+- **Add Customer Modal** — 2-step form (fill → review) that saves directly to MongoDB via the backend API
+- **Priority Filtering** — High / Medium / Low priority leads with real-time filter
+- **Detail Panel** — Slide-in panel with signal analysis, SHAP explainability, outreach message, and full customer record
+- **Dark Mode** — Full dark/light theme toggle across all pages
+- **CSV Export** — One-click export of all leads
+- **Role-Based UI** — Different sidebar menus for RM, Branch Manager, and Admin
+- **AI Assistant** — Chat with Groq LLaMA3 using live portfolio data as context
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## Tech Stack
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- React 18 (Create React App)
+- Axios for API calls
+- Inline styles (no CSS framework — matches IDBI design system)
+- Context API for global state (customers, analytics, auth, dark mode)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Project Structure
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+frontend/src/
+├── components/
+│   ├── DetailPanel.jsx      # Slide-in customer detail drawer
+│   ├── Sidebar.jsx          # Role-based navigation
+│   ├── KPICards.jsx         # Dashboard metric cards
+│   ├── LeadTable.jsx        # Lead list table
+│   ├── Badges.jsx           # Priority & loan type badges
+│   ├── SignalBars.jsx       # SHAP signal visualization
+│   ├── InsightsCard.jsx     # AI insights summary
+│   ├── AIvsCIBIL.jsx        # AI vs CIBIL comparison chart
+│   └── FilterBar.jsx        # Search and filter controls
+├── context/
+│   └── AppContext.jsx       # Global state — customers, auth, dark mode
+├── pages/
+│   ├── DashboardPage.jsx
+│   ├── CustomersPage.jsx    # Customer management + Add Customer modal
+│   ├── AnalyticsPage.jsx
+│   ├── AIAssistantPage.jsx
+│   └── ...
+└── services/
+    ├── api.js               # All API calls + normalizeCustomer mapper
+    └── useCustomers.js      # Customer data hook
+```
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Build for Production
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+npm run build
+```
 
-### Code Splitting
+Output goes to `frontend/build/` — ready to serve as a static site.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## Deployment (Netlify / Vercel)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+1. Push repo to GitHub
+2. Connect `frontend/` folder to Netlify or Vercel
+3. Set build command: `npm run build`
+4. Set publish directory: `build`
+5. Add environment variable if needed: `REACT_APP_API_URL=https://your-backend.onrender.com`
 
-### Making a Progressive Web App
+> Update `BASE` in `src/services/api.js` to point to your deployed backend URL before building.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## Default Login Credentials
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+| Role             | Employee ID | Password    |
+|------------------|-------------|-------------|
+| Relationship Mgr | RM001       | password123 |
+| Branch Manager   | BM001       | password123 |
+| Administrator    | ADM001      | admin123    |
