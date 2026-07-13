@@ -108,12 +108,22 @@ function SaveBtn({ onClick }) {
 }
 
 function ProfileSettings({ darkMode, border, textPrimary, textSecondary, addToast }) {
+  const { user } = useApp();
+  const roleLabel = user?.role === "admin" ? "Administrator" : user?.role === "bm" ? "Branch Manager" : "Relationship Manager";
   const inputStyle = { width: "100%", padding: "9px 12px", border: `1.5px solid ${border}`, borderRadius: "8px", fontSize: "13px", outline: "none", background: darkMode ? "#0f172a" : "#f9fafb", color: textPrimary };
+  const fields = [
+    ["Full Name", user?.name || "", true],
+    ["Employee ID", user?.employeeId || "", true],
+    ["Email", user?.email || "", false],
+    ["Phone", user?.phone || "", false],
+    ["Branch", user?.branch || "", true],
+    ["Role", roleLabel, true],
+  ];
   return (
     <div>
       <SectionTitle title="Profile Settings" desc="Update your personal information" textPrimary={textPrimary} textSecondary={textSecondary} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-        {[["Full Name", "Ankit Sharma"], ["Employee ID", "RM001", true], ["Email", "ankit.sharma@idbi.co.in"], ["Phone", "+91 98765 43210"], ["Branch", "Mumbai Main", true], ["Department", "Retail Lending"]].map(([label, val, disabled]) => (
+        {fields.map(([label, val, disabled]) => (
           <div key={label}>
             <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary, display: "block", marginBottom: "5px" }}>{label}</label>
             <input defaultValue={val} disabled={disabled} style={{ ...inputStyle, opacity: disabled ? 0.6 : 1 }} />
