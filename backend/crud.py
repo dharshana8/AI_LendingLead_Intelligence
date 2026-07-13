@@ -74,16 +74,22 @@ def delete_lead(db: Session, customer_id: int) -> bool:
     return True
 
 
+CRM_ONLY_FIELDS = {"status", "assigned_to", "last_contact"}
+
+
 def update_lead(db: Session, customer_id: int, payload: CustomerUpdate) -> Lead | None:
     lead = db.query(Lead).filter(Lead.customer_id == customer_id).first()
     if not lead:
         return None
-    for k, v in payload.model_dump(exclude_none=True).items():
+    updates = payload.model_dump(exclude_none=True)
+    for k, v in updates.items():
         setattr(lead, k, v)
-    raw = {c.name: getattr(lead, c.name) for c in lead.__table__.columns}
-    enriched = _enrich(raw)
-    for k, v in enriched.items():
-        setattr(lead, k, v)
+    # Only re-run ML pipeline if financial fields changed
+    if not updates.keys() <= CRM_ONLY_FIELDS:
+        raw = {c.name: getattr(lead, c.name) for c in lead.__table__.columns}
+        enriched = _enrich(raw)
+        for k, v in enriched.items():
+            setattr(lead, k, v)
     db.commit()
     db.refresh(lead)
     return _deserialize_lead(lead)

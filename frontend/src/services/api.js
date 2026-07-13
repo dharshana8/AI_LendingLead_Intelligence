@@ -196,6 +196,12 @@ export function normalizeAnalytics(data, customers) {
 }
 
 // ── API calls ────────────────────────────────────────────────────────────────
+export const apiLogin = (employeeId, password) =>
+  api.post("/login", { employeeId, password }).then(r => r.data);
+
+export const apiRegister = (payload) =>
+  api.post("/register", payload).then(r => r.data);
+
 export const apiGetCustomers = () =>
   api.get("/customers").then(r => {
     const list = Array.isArray(r.data) ? r.data : (r.data.customers ?? r.data.data ?? []);

@@ -48,4 +48,9 @@ class Lead(Base):
     explanation = Column(String, default="")
     shap_top3 = Column(Text, default="[]")
 
+    # CRM fields
+    status = Column(String, default="New")
+    assigned_to = Column(String, default="")
+    last_contact = Column(String, default="")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())

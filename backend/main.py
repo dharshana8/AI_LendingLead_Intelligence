@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 import csv
 import io
 
@@ -31,7 +32,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    _load_artefacts()  # pre-load model, scaler, shap explainer into cache
+    _load_artefacts()
 
 
 @app.get("/health")
@@ -39,6 +40,59 @@ def health():
     return {"status": "OK"}
 
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+USERS_DB = [
+    {"id": 1, "employeeId": "RM001", "password": "password123", "name": "Ankit Sharma", "role": "rm", "branch": "Mumbai Main", "email": "ankit.sharma@idbi.co.in", "phone": "+91 98765 43210", "avatar": "AS", "joined": "Jan 2022", "performance": 92},
+    {"id": 2, "employeeId": "BM001", "password": "password123", "name": "Priya Mehta", "role": "bm", "branch": "Delhi Central", "email": "priya.mehta@idbi.co.in", "phone": "+91 98765 43211", "avatar": "PM", "joined": "Mar 2019", "performance": 88},
+    {"id": 3, "employeeId": "ADM001", "password": "admin123", "name": "Rajiv Nair", "role": "admin", "branch": "HQ Mumbai", "email": "rajiv.nair@idbi.co.in", "phone": "+91 98765 43212", "avatar": "RN", "joined": "Jun 2015", "performance": 96},
+]
+
+
+class LoginRequest(BaseModel):
+    employeeId: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    employeeId: str
+    password: str
+    name: str
+    role: str = "rm"
+    branch: str = "Mumbai Main"
+    email: str = ""
+    phone: str = ""
+
+
+@app.post("/login")
+def login(payload: LoginRequest):
+    user = next((u for u in USERS_DB if u["employeeId"] == payload.employeeId and u["password"] == payload.password), None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid Employee ID or Password")
+    return {k: v for k, v in user.items() if k != "password"}
+
+
+@app.post("/register", status_code=201)
+def register(payload: RegisterRequest):
+    if any(u["employeeId"] == payload.employeeId for u in USERS_DB):
+        raise HTTPException(status_code=409, detail="Employee ID already exists")
+    new_user = {
+        "id": len(USERS_DB) + 1,
+        "employeeId": payload.employeeId,
+        "password": payload.password,
+        "name": payload.name,
+        "role": payload.role,
+        "branch": payload.branch,
+        "email": payload.email,
+        "phone": payload.phone,
+        "avatar": "".join(w[0] for w in payload.name.split()[:2]).upper(),
+        "joined": "2025",
+        "performance": 75,
+    }
+    USERS_DB.append(new_user)
+    return {k: v for k, v in new_user.items() if k != "password"}
+
+
+# ── Customers ─────────────────────────────────────────────────────────────────
 @app.post("/customers", response_model=CustomerResponse, status_code=201)
 def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)):
     return create_lead(db, payload)
@@ -87,14 +141,14 @@ def load_sample(db: Session = Depends(get_db)):
 def export_csv(db: Session = Depends(get_db)):
     leads = get_leads(db)
     output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["ID", "Name", "Age", "Occupation", "CIBIL Score", "Income",
-                     "AI Score", "Conversion Probability", "Priority", "Recommended Loan",
-                     "Top Signal", "Explanation", "Created At"])
-    for l in leads:
-        writer.writerow([l.customer_id, l.name, l.age, l.occupation, l.cibil_score,
-                         l.income, l.ai_score, l.conversion_probability, l.priority,
-                         l.recommended_loan, l.top_signal, l.explanation, l.created_at])
+    fields = ["customer_id", "name", "age", "occupation", "cibil_score", "income",
+              "ai_score", "conversion_probability", "priority", "recommended_loan",
+              "top_signal", "status", "assigned_to", "last_contact", "created_at"]
+    writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for lead in leads:
+        row = {f: getattr(lead, f, "") for f in fields}
+        writer.writerow(row)
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),

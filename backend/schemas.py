@@ -51,6 +51,9 @@ class CustomerUpdate(BaseModel):
     existing_loan_count: Optional[int] = Field(default=None, ge=0)
     years_of_experience: Optional[int] = Field(default=None, ge=0)
     account_balance: Optional[float] = Field(default=None, ge=0)
+    status: Optional[str] = None
+    assigned_to: Optional[str] = None
+    last_contact: Optional[str] = None
 
 
 class CustomerResponse(BaseModel):
@@ -87,6 +90,9 @@ class CustomerResponse(BaseModel):
     top_signal: str
     explanation: str
     shap_top3: Any  # list of {feature, shap_value, direction}
+    status: str
+    assigned_to: str
+    last_contact: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

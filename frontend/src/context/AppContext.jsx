@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics } from "../services/api";
+import api from "../services/api";
 
 const AppContext = createContext(null);
 
@@ -64,10 +65,30 @@ export function AppProvider({ children }) {
     URL.revokeObjectURL(url);
   }, []);
 
-  const login = useCallback((employeeId, password) => {
-    const found = MOCK_USERS.find(u => u.employeeId === employeeId && u.password === password);
-    if (found) { setUser(found); return { success: true }; }
-    return { success: false, error: "Invalid Employee ID or Password" };
+  const login = useCallback(async (employeeId, password) => {
+    // Try backend first
+    try {
+      const res = await api.post("/login", { employeeId, password });
+      setUser(res.data);
+      return { success: true };
+    } catch (e) {
+      // Fallback to mock users if backend is down
+      const found = MOCK_USERS.find(u => u.employeeId === employeeId && u.password === password);
+      if (found) { setUser(found); return { success: true }; }
+      const msg = e?.response?.data?.detail || "Invalid Employee ID or Password";
+      return { success: false, error: msg };
+    }
+  }, []);
+
+  const register = useCallback(async (payload) => {
+    try {
+      const res = await api.post("/register", payload);
+      setUser(res.data);
+      return { success: true };
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Registration failed";
+      return { success: false, error: msg };
+    }
   }, []);
 
   const logout = useCallback(() => setUser(null), []);
@@ -86,7 +107,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      user, login, logout,
+      user, login, logout, register,
       darkMode, setDarkMode,
       notifications, markAllRead, unreadCount,
       toasts, addToast,
