@@ -40,12 +40,15 @@ export default function LoginPage() {
     if (reg.password !== reg.confirmPassword) { setError("Passwords do not match"); return; }
     setLoading(true);
     const result = await register({ employeeId: reg.employeeId, password: reg.password, name: reg.name, role: reg.role, branch: reg.branch, email: reg.email, phone: reg.phone });
-    setLoading(false);
-    if (!result.success) setError(result.error);
-    else {
-      addToast("Account created! Signing you in...", "success");
-      await login(reg.employeeId, reg.password);
+    if (!result.success) {
+      setLoading(false);
+      setError(result.error);
+      return;
     }
+    const loginResult = await login(reg.employeeId, reg.password);
+    setLoading(false);
+    if (!loginResult.success) setError(loginResult.error);
+    else addToast(`Welcome, ${reg.name}! Signed in as ${reg.role === "admin" ? "Administrator" : reg.role === "bm" ? "Branch Manager" : "Relationship Manager"}.`, "success");
   };
 
   return (
