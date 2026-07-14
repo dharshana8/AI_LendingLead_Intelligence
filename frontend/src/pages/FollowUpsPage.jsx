@@ -2,24 +2,30 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
 
 const STATUS_COLORS = {
-  Completed: ["#dcfce7", "#15803d"],
-  Pending: ["#fef3c7", "#b45309"],
-  Upcoming: ["#eff6ff", "#1e40af"],
-  Rescheduled: ["#fee2e2", "#b91c1c"],
+  Completed:  ["#dcfce7", "#15803d"],
+  Pending:    ["#fef3c7", "#b45309"],
+  Upcoming:   ["#eff6ff", "#1e40af"],
+  Rescheduled:["#fee2e2", "#b91c1c"],
 };
+
+const TIMES = ["9:00 AM", "10:30 AM", "11:00 AM", "2:00 PM", "3:30 PM", "4:00 PM"];
 
 export default function FollowUpsPage() {
   const { darkMode, addToast, customers } = useApp();
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+  const [rescheduleModal, setRescheduleModal] = useState(null); // followup id
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("9:00 AM");
 
-  const FOLLOWUPS = useMemo(() => customers.slice(0, 12).map((l, i) => ({
-    ...l,
-    followupDate: i < 4 ? "Today" : i < 7 ? "Tomorrow" : `Jun ${28 + i}`,
-    followupTime: ["9:00 AM", "10:30 AM", "11:00 AM", "2:00 PM", "3:30 PM", "4:00 PM"][i % 6],
-    status: i < 2 ? "Completed" : i < 5 ? "Pending" : i < 8 ? "Upcoming" : "Rescheduled",
-    notes: i === 0 ? "Discussed Home Loan options. Customer interested." : i === 1 ? "Sent loan brochure via email." : "",
-  })), [customers]);
+  const [followups, setFollowups] = useState(() =>
+    customers.slice(0, 12).map((l, i) => ({
+      ...l,
+      followupDate: i < 4 ? "Today" : i < 7 ? "Tomorrow" : `Jun ${28 + i}`,
+      followupTime: TIMES[i % 6],
+      status: i < 2 ? "Completed" : i < 5 ? "Pending" : i < 8 ? "Upcoming" : "Rescheduled",
+    }))
+  );
 
   const bg = darkMode ? "#0f172a" : "#f5f7fb";
   const cardBg = darkMode ? "#1e293b" : "#fff";
@@ -27,20 +33,44 @@ export default function FollowUpsPage() {
   const textPrimary = darkMode ? "#f1f5f9" : "#111827";
   const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
 
+  const markDone = (id) => {
+    setFollowups(prev => prev.map(f => f.id === id ? { ...f, status: "Completed" } : f));
+    addToast("Marked as completed ✓", "success");
+  };
+
+  const openReschedule = (id) => {
+    setRescheduleModal(id);
+    setRescheduleDate("");
+    setRescheduleTime("9:00 AM");
+  };
+
+  const confirmReschedule = () => {
+    if (!rescheduleDate) { addToast("Please pick a date", "error"); return; }
+    const label = new Date(rescheduleDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    setFollowups(prev => prev.map(f =>
+      f.id === rescheduleModal ? { ...f, status: "Rescheduled", followupDate: label, followupTime: rescheduleTime } : f
+    ));
+    addToast(`Rescheduled to ${label} at ${rescheduleTime}`, "success");
+    setRescheduleModal(null);
+  };
+
+  const scheduleNew = () => addToast("Schedule Follow-up — coming soon", "info");
+
   const statuses = ["All", "Pending", "Upcoming", "Completed", "Rescheduled"];
-  const filtered = filter === "All" ? FOLLOWUPS : FOLLOWUPS.filter(f => f.status === filter);
-  const todayItems = FOLLOWUPS.filter(f => f.followupDate === "Today");
-  const pendingCount = FOLLOWUPS.filter(f => f.status === "Pending").length;
-  const completedCount = FOLLOWUPS.filter(f => f.status === "Completed").length;
+  const filtered = filter === "All" ? followups : followups.filter(f => f.status === filter);
+  const todayItems = followups.filter(f => f.followupDate === "Today");
+  const pendingCount = followups.filter(f => f.status === "Pending").length;
+  const completedCount = followups.filter(f => f.status === "Completed").length;
 
   return (
     <div style={{ background: bg, minHeight: "100%", padding: "20px 24px 40px" }}>
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h2 style={{ fontSize: "20px", fontWeight: "800", color: textPrimary, margin: 0 }}>Follow-ups</h2>
           <p style={{ fontSize: "13px", color: textSecondary, margin: "4px 0 0" }}>{todayItems.length} calls scheduled for today</p>
         </div>
-        <button onClick={() => addToast("Follow-up scheduled", "success")}
+        <button onClick={scheduleNew}
           style={{ padding: "9px 18px", background: "#1e40af", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
           + Schedule Follow-up
         </button>
@@ -50,9 +80,9 @@ export default function FollowUpsPage() {
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
         {[
           { label: "Today's Calls", value: todayItems.length, color: "#1e40af", bg: "#eff6ff", icon: "📅" },
-          { label: "Pending", value: pendingCount, color: "#b45309", bg: "#fef3c7", icon: "⏳" },
-          { label: "Completed", value: completedCount, color: "#15803d", bg: "#dcfce7", icon: "✅" },
-          { label: "Total", value: FOLLOWUPS.length, color: "#6b7280", bg: "#f3f4f6", icon: "📋" },
+          { label: "Pending",       value: pendingCount,      color: "#b45309", bg: "#fef3c7", icon: "⏳" },
+          { label: "Completed",     value: completedCount,    color: "#15803d", bg: "#dcfce7", icon: "✅" },
+          { label: "Total",         value: followups.length,  color: "#6b7280", bg: "#f3f4f6", icon: "📋" },
         ].map(({ label, value, color, bg: sbg, icon }) => (
           <div key={label} style={{ flex: "1 1 120px", background: cardBg, borderRadius: "10px", padding: "14px 16px", border: `1px solid ${border}`, display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: sbg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>{icon}</div>
@@ -81,8 +111,10 @@ export default function FollowUpsPage() {
                 <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
                   <button onClick={() => addToast(`Calling ${f.name}...`, "info")}
                     style={{ flex: 1, padding: "6px", background: "#1e40af", color: "#fff", border: "none", borderRadius: "6px", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}>📞 Call</button>
-                  <button onClick={() => addToast("Marked as completed", "success")}
-                    style={{ flex: 1, padding: "6px", background: "#dcfce7", color: "#15803d", border: "none", borderRadius: "6px", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}>✓ Done</button>
+                  <button onClick={() => markDone(f.id)}
+                    style={{ flex: 1, padding: "6px", background: f.status === "Completed" ? "#15803d" : "#dcfce7", color: f.status === "Completed" ? "#fff" : "#15803d", border: "none", borderRadius: "6px", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}>
+                    {f.status === "Completed" ? "✓ Done" : "✓ Done"}
+                  </button>
                 </div>
               </div>
             ))}
@@ -106,6 +138,9 @@ export default function FollowUpsPage() {
 
       {/* List */}
       <div style={{ background: cardBg, borderRadius: "12px", border: `1px solid ${border}`, overflow: "hidden" }}>
+        {filtered.length === 0 && (
+          <div style={{ padding: "32px", textAlign: "center", color: textSecondary, fontSize: "13px" }}>No follow-ups in this category</div>
+        )}
         {filtered.map((f, i) => {
           const [sbg, sc] = STATUS_COLORS[f.status] || ["#f3f4f6", "#374151"];
           return (
@@ -129,22 +164,64 @@ export default function FollowUpsPage() {
               <span style={{ background: sbg, color: sc, fontSize: "11px", fontWeight: "600", padding: "3px 10px", borderRadius: "20px" }}>{f.status}</span>
               <div style={{ display: "flex", gap: "6px" }}>
                 <MiniBtn label="📞 Call" color="#1e40af" onClick={() => addToast(`Calling ${f.name}...`, "info")} />
-                <MiniBtn label="✓ Done" color="#15803d" onClick={() => addToast("Marked complete", "success")} />
-                <MiniBtn label="↻ Reschedule" color="#b45309" onClick={() => addToast("Rescheduled", "warning")} />
+                <MiniBtn
+                  label={f.status === "Completed" ? "✓ Done" : "✓ Done"}
+                  color={f.status === "Completed" ? "#6b7280" : "#15803d"}
+                  onClick={() => markDone(f.id)}
+                  disabled={f.status === "Completed"}
+                />
+                <MiniBtn label="↻ Reschedule" color="#b45309" onClick={() => openReschedule(f.id)} />
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Reschedule Modal */}
+      {rescheduleModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: cardBg, borderRadius: "14px", padding: "24px", width: "340px", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: "800", color: textPrimary }}>↻ Reschedule Follow-up</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>New Date</label>
+                <input type="date" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  style={{ width: "100%", padding: "8px 10px", border: `1.5px solid ${border}`, borderRadius: "7px", fontSize: "13px", background: darkMode ? "#0f172a" : "#f9fafb", color: textPrimary, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Time Slot</label>
+                <select value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", border: `1.5px solid ${border}`, borderRadius: "7px", fontSize: "13px", background: darkMode ? "#0f172a" : "#f9fafb", color: textPrimary, outline: "none" }}>
+                  {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
+              <button onClick={() => setRescheduleModal(null)}
+                style={{ padding: "8px 16px", borderRadius: "7px", border: `1px solid ${border}`, background: "transparent", color: textSecondary, fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Cancel</button>
+              <button onClick={confirmReschedule}
+                style={{ padding: "8px 16px", borderRadius: "7px", border: "none", background: "#b45309", color: "#fff", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function MiniBtn({ label, color, onClick }) {
+function MiniBtn({ label, color, onClick, disabled }) {
   const [h, setH] = useState(false);
   return (
-    <button onClick={e => { e.stopPropagation(); onClick(); }} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{ padding: "5px 10px", borderRadius: "6px", border: `1px solid ${color}`, background: h ? color : "transparent", color: h ? "#fff" : color, fontSize: "11px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" }}>
+    <button onClick={e => { e.stopPropagation(); if (!disabled) onClick(); }}
+      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{
+        padding: "5px 10px", borderRadius: "6px", border: `1px solid ${disabled ? "#d1d5db" : color}`,
+        background: disabled ? "#f3f4f6" : h ? color : "transparent",
+        color: disabled ? "#9ca3af" : h ? "#fff" : color,
+        fontSize: "11px", fontWeight: "600", cursor: disabled ? "not-allowed" : "pointer",
+        transition: "all 0.15s", whiteSpace: "nowrap",
+      }}>
       {label}
     </button>
   );

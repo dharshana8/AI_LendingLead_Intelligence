@@ -19,8 +19,9 @@ function Avatar({ name, size = 38 }) {
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Applied", "Converted"];
 
 export default function CustomersPage() {
-  const { darkMode, addToast, customers, exportCSV, refetch, createCustomer } = useApp();
+  const { darkMode, addToast, customers, exportCSV, importCSV, refetch, createCustomer } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -44,8 +45,12 @@ export default function CustomersPage() {
     if (search.trim()) {
       const q = search.toLowerCase();
       data = data.filter(l =>
-        l.name.toLowerCase().includes(q) || l.occupation.toLowerCase().includes(q) ||
-        l.loan.toLowerCase().includes(q) || l.signal.toLowerCase().includes(q)
+        (l.name || "").toLowerCase().includes(q) ||
+        (l.occupation || "").toLowerCase().includes(q) ||
+        (l.loan || "").toLowerCase().includes(q) ||
+        (l.signal || "").toLowerCase().includes(q) ||
+        String(l.cibil || "").includes(q) ||
+        String(l.aiScore || "").includes(q)
       );
     }
     return data;
@@ -86,6 +91,7 @@ export default function CustomersPage() {
             </>
           )}
           <ActionBtn label="+ Add Customer" color="#1e40af" onClick={() => setShowAddModal(true)} primary />
+          <ActionBtn label="📥 Import" color="#059669" onClick={() => setShowImportModal(true)} />
           <ActionBtn label="📤 Export CSV" color="#374151" onClick={() => exportCSV().then(() => addToast("Export downloaded", "success")).catch(() => addToast("Export failed", "error"))} />
         </div>
       </div>
@@ -167,6 +173,21 @@ export default function CustomersPage() {
       )}
 
       <DetailPanel lead={selected} onClose={() => setSelected(null)} onRefresh={refetch} />
+      {showImportModal && (
+        <ImportModal
+          darkMode={darkMode}
+          onClose={() => setShowImportModal(false)}
+          onImport={async (file) => {
+            try {
+              const result = await importCSV(file);
+              addToast(`Imported ${result.imported} customers${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`, "success");
+              setShowImportModal(false);
+            } catch (e) {
+              addToast(e?.response?.data?.detail || "Import failed", "error");
+            }
+          }}
+        />
+      )}
       {showAddModal && (
         <AddCustomerModal
           darkMode={darkMode}
@@ -318,6 +339,100 @@ function Pagination({ page, totalPages, total, pageSize, onPage, darkMode, cardB
               }}>{p}</button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function ImportModal({ darkMode, onClose, onImport }) {
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const inputRef = React.useRef();
+
+  const bg = darkMode ? "#1e293b" : "#fff";
+  const border = darkMode ? "#334155" : "#e5e7eb";
+  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
+  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+
+  const handleDrop = (e) => {
+    e.preventDefault(); setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  };
+
+  const handleSubmit = async () => {
+    if (!file) return;
+    setLoading(true);
+    await onImport(file);
+    setLoading(false);
+  };
+
+  const ACCEPTED = [".csv", ".xlsx", ".xls"];
+  const isValid = file && ACCEPTED.some(ext => file.name.toLowerCase().endsWith(ext));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div style={{ background: bg, borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: textPrimary }}>📥 Import Customers</h3>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: textSecondary }}>Upload CSV or Excel file — AI scores all customers automatically</p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: textSecondary }}>✕</button>
+        </div>
+
+        <div style={{ padding: "20px 24px" }}>
+          {/* Drop Zone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => inputRef.current.click()}
+            style={{
+              border: `2px dashed ${dragging ? "#1e40af" : file ? "#15803d" : border}`,
+              borderRadius: "12px", padding: "32px 20px", textAlign: "center", cursor: "pointer",
+              background: dragging ? "#eff6ff" : file ? "#f0fdf4" : darkMode ? "#0f172a" : "#f9fafb",
+              transition: "all 0.2s",
+            }}>
+            <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }}
+              onChange={e => setFile(e.target.files[0])} />
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>{file ? "✅" : "📂"}</div>
+            {file ? (
+              <>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "#15803d" }}>{file.name}</div>
+                <div style={{ fontSize: "12px", color: textSecondary, marginTop: "4px" }}>{(file.size / 1024).toFixed(1)} KB — click to change</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: "14px", fontWeight: "600", color: textPrimary }}>Drop file here or click to browse</div>
+                <div style={{ fontSize: "12px", color: textSecondary, marginTop: "4px" }}>Supports .csv, .xlsx, .xls</div>
+              </>
+            )}
+          </div>
+
+          {/* Column guide */}
+          <div style={{ marginTop: "16px", background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "12px 14px", border: `1px solid ${border}` }}>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", marginBottom: "8px" }}>Required Columns (any order)</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {["name", "age", "occupation", "cibil_score", "monthly_credit_1..6", "credit_limit"].map(col => (
+                <span key={col} style={{ background: "#eff6ff", color: "#1e40af", fontSize: "11px", fontWeight: "600", padding: "2px 8px", borderRadius: "20px" }}>{col}</span>
+              ))}
+            </div>
+            <div style={{ fontSize: "11px", color: textSecondary, marginTop: "8px" }}>Optional: emi_debits, cc_spend, account_balance, existing_loan_count, years_of_experience, loan_page_visits</div>
+          </div>
+        </div>
+
+        <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          <ActionBtn label="Cancel" color="#6b7280" onClick={onClose} />
+          <ActionBtn
+            label={loading ? "Importing..." : "📥 Import"}
+            color="#059669"
+            onClick={handleSubmit}
+            primary
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics, apiCreateCustomer } from "../services/api";
+import { apiGetCustomers, apiGetAnalytics, apiLoadSample, apiExport, normalizeAnalytics, apiCreateCustomer, apiImportCSV } from "../services/api";
 import api from "../services/api";
 
 const AppContext = createContext(null);
@@ -74,6 +74,12 @@ export function AppProvider({ children }) {
     return created;
   }, [fetchCustomers]);
 
+  const importCSV = useCallback(async (file) => {
+    const result = await apiImportCSV(file);
+    await fetchCustomers();
+    return result;
+  }, [fetchCustomers]);
+
   const loadSample = useCallback(async () => {
     await apiLoadSample();
     await fetchCustomers();
@@ -132,7 +138,7 @@ export function AppProvider({ children }) {
       toasts, addToast,
       sidebarCollapsed, setSidebarCollapsed,
       customers, analytics, dataLoading, dataError,
-      refetch: fetchCustomers, createCustomer, loadSample, exportCSV,
+      refetch: fetchCustomers, createCustomer, importCSV, loadSample, exportCSV,
     }}>
       {children}
     </AppContext.Provider>

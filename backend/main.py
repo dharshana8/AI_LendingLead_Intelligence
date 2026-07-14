@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -208,6 +208,113 @@ async def export_csv():
 @app.get("/analytics", response_model=AnalyticsResponse)
 async def analytics():
     return await get_analytics()
+
+
+@app.post("/import-csv")
+async def import_csv(file: UploadFile = File(...)):
+    """Import customers from CSV or Excel file. Maps common column name variants."""
+    filename = file.filename.lower()
+    content = await file.read()
+
+    rows = []
+    if filename.endswith(".csv"):
+        text = content.decode("utf-8-sig", errors="replace")
+        reader = csv.DictReader(io.StringIO(text))
+        rows = list(reader)
+    elif filename.endswith((".xlsx", ".xls")):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
+            ws = wb.active
+            headers = [str(c.value).strip() if c.value else "" for c in next(ws.iter_rows(min_row=1, max_row=1))]
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                rows.append({headers[i]: (str(v).strip() if v is not None else "") for i, v in enumerate(row)})
+        except ImportError:
+            raise HTTPException(status_code=400, detail="openpyxl not installed. Use CSV format.")
+    else:
+        raise HTTPException(status_code=400, detail="Only .csv, .xlsx, .xls files supported")
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="File is empty or has no data rows")
+
+    # Column name aliases — maps various header names → our field names
+    ALIASES = {
+        "name": ["name", "customer_name", "full_name", "customer name"],
+        "age": ["age"],
+        "occupation": ["occupation", "job", "job_title", "profession"],
+        "cibil_score": ["cibil_score", "cibil", "credit_score"],
+        "monthly_credit_1": ["monthly_credit_1", "month1", "m1", "salary_m1"],
+        "monthly_credit_2": ["monthly_credit_2", "month2", "m2", "salary_m2"],
+        "monthly_credit_3": ["monthly_credit_3", "month3", "m3", "salary_m3"],
+        "monthly_credit_4": ["monthly_credit_4", "month4", "m4", "salary_m4"],
+        "monthly_credit_5": ["monthly_credit_5", "month5", "m5", "salary_m5"],
+        "monthly_credit_6": ["monthly_credit_6", "month6", "m6", "salary_m6"],
+        "emi_debits": ["emi_debits", "emi", "monthly_emi"],
+        "cc_spend": ["cc_spend", "credit_card_spend", "cc"],
+        "credit_limit": ["credit_limit", "limit"],
+        "loan_page_visits": ["loan_page_visits", "page_visits", "visits"],
+        "existing_loan_count": ["existing_loan_count", "existing_loans", "loan_count"],
+        "years_of_experience": ["years_of_experience", "experience", "exp", "years_exp"],
+        "account_balance": ["account_balance", "balance", "bank_balance"],
+    }
+
+    def resolve(row: dict, field: str):
+        row_lower = {k.lower().strip(): v for k, v in row.items()}
+        for alias in ALIASES.get(field, [field]):
+            if alias in row_lower:
+                return row_lower[alias]
+        return ""
+
+    def safe_int(v, default=0):
+        try: return int(float(str(v).replace(",", "").strip())) if v else default
+        except: return default
+
+    def safe_float(v, default=0.0):
+        try: return float(str(v).replace(",", "").strip()) if v else default
+        except: return default
+
+    imported, skipped = [], []
+    for i, row in enumerate(rows):
+        name = resolve(row, "name").strip()
+        if not name:
+            skipped.append(f"Row {i+2}: missing name")
+            continue
+        cibil = safe_int(resolve(row, "cibil_score"), 650)
+        if cibil < 300 or cibil > 900:
+            cibil = 650
+        credits = [safe_float(resolve(row, f"monthly_credit_{n}")) for n in range(1, 7)]
+        # If no monthly credits provided, try to use income/salary column as credit_1
+        if all(c == 0 for c in credits):
+            row_lower = {k.lower().strip(): v for k, v in row.items()}
+            for col in ["income", "monthly_income", "salary", "monthly_salary"]:
+                if col in row_lower and safe_float(row_lower[col]) > 0:
+                    credits[0] = safe_float(row_lower[col])
+                    credits[1] = credits[0]
+                    credits[2] = credits[0]
+                    break
+        try:
+            payload = CustomerCreate(
+                name=name,
+                age=safe_int(resolve(row, "age"), 35),
+                occupation=resolve(row, "occupation") or "Professional",
+                cibil_score=cibil,
+                monthly_credit_1=credits[0], monthly_credit_2=credits[1],
+                monthly_credit_3=credits[2], monthly_credit_4=credits[3],
+                monthly_credit_5=credits[4], monthly_credit_6=credits[5],
+                emi_debits=safe_float(resolve(row, "emi_debits")),
+                cc_spend=safe_float(resolve(row, "cc_spend")),
+                credit_limit=safe_float(resolve(row, "credit_limit")) or 100000.0,
+                loan_page_visits=safe_int(resolve(row, "loan_page_visits")),
+                existing_loan_count=safe_int(resolve(row, "existing_loan_count")),
+                years_of_experience=safe_int(resolve(row, "years_of_experience")),
+                account_balance=safe_float(resolve(row, "account_balance")),
+            )
+            result = await create_lead(payload)
+            imported.append(result)
+        except Exception as e:
+            skipped.append(f"Row {i+2} ({name}): {str(e)}")
+
+    return {"imported": len(imported), "skipped": len(skipped), "skipped_details": skipped[:10]}
 
 
 # ── Groq AI Chat ──────────────────────────────────────────────────────────────

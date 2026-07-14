@@ -229,6 +229,12 @@ export const apiGetHealth = () =>
 export const apiLoadSample = () =>
   api.post("/load-sample").then(r => r.data);
 
+export const apiImportCSV = (file) => {
+  const form = new FormData();
+  form.append("file", file);
+  return api.post("/import-csv", form, { headers: { "Content-Type": "multipart/form-data" } }).then(r => r.data);
+};
+
 export const apiExport = () =>
   api.get("/export", { responseType: "blob" }).then(r => r.data);
 
