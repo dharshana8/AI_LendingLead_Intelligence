@@ -21,7 +21,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e?.preventDefault();
     setError("");
-    if (!empId.trim()) { setError("Employee ID is required"); return; }
+    if (!empId.trim()) { setError("Employee ID or Email is required"); return; }
     if (!password.trim()) { setError("Password is required"); return; }
     setLoading(true);
     const result = await login(empId.trim(), password);
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 <p style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>Sign in to your IDBI dashboard</p>
               </div>
 
-              <Field label="Employee ID" value={empId} onChange={setEmpId} placeholder="Enter your Employee ID" />
+              <Field label="Employee ID or Email" value={empId} onChange={setEmpId} placeholder="Employee ID or email address" />
               <PasswordField label="Password" value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(s => !s)} onEnter={handleLogin} />
 
               <SubmitBtn loading={loading} label="Sign In" />

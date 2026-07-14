@@ -100,11 +100,13 @@ class RegisterRequest(BaseModel):
 @app.post("/login")
 async def login(payload: LoginRequest):
     user = await users_col.find_one({
-        "employee_id": payload.employeeId,
-        "password": payload.password
+        "$or": [
+            {"employee_id": payload.employeeId, "password": payload.password},
+            {"email": payload.employeeId, "password": payload.password},
+        ]
     })
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid Employee ID or Password")
+        raise HTTPException(status_code=401, detail="Invalid Employee ID / Email or Password")
     return _user_dict(user)
 
 
