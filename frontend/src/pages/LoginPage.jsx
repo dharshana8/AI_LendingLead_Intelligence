@@ -42,7 +42,10 @@ export default function LoginPage() {
     const result = await register({ employeeId: reg.employeeId, password: reg.password, name: reg.name, role: reg.role, branch: reg.branch, email: reg.email, phone: reg.phone });
     setLoading(false);
     if (!result.success) setError(result.error);
-    else addToast("Account created successfully!", "success");
+    else {
+      addToast("Account created! Signing you in...", "success");
+      await login(reg.employeeId, reg.password);
+    }
   };
 
   return (

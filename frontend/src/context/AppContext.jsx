@@ -102,8 +102,7 @@ export function AppProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     try {
-      const res = await api.post("/register", payload);
-      setUser(res.data);
+      await api.post("/register", payload);
       return { success: true };
     } catch (e) {
       const msg = e?.response?.data?.detail || "Registration failed";
