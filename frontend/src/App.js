@@ -19,17 +19,39 @@ import AppHeader from "./components/AppHeader";
 import ToastContainer from "./components/Toast";
 
 const GLOBAL_STYLES = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F3ED;
+    --card: #FFFFFF;
+    --border: #E4DFD1;
+    --navy: #0E1A2B;
+    --navy2: #152540;
+    --gold: #C79A3D;
+    --gold-soft: #F1E3C3;
+    --teal: #2F6E63;
+    --teal-soft: #DCEAE6;
+    --rust: #B5482F;
+    --rust-soft: #F3DDD4;
+    --ink: #12181F;
+    --ink2: #5C6672;
+    --text-dark: #E8ECF2;
+    --text-muted: #8CA0BC;
+    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-serif: 'Fraunces', Georgia, serif;
+  }
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--ink); }
   @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.4} }
   @keyframes spin { to{transform:rotate(360deg)} }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideIn { from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)} }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  ::-webkit-scrollbar-thumb { background: #C8C0B0; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #A89880; }
+  .mono { font-family: var(--font-mono) !important; }
 `;
 
 function SkeletonLoader({ darkMode }) {
@@ -70,8 +92,8 @@ function AppShell() {
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const bg = darkMode ? "#0f172a" : "#f5f7fb";
-  const font = "'Inter','Segoe UI',system-ui,-apple-system,sans-serif";
+  const bg = darkMode ? "#0E1A2B" : "#F5F3ED";
+  const font = "'IBM Plex Sans', system-ui, sans-serif";
 
   if (!user) return <LoginPage />;
   if (loading) return <SkeletonLoader darkMode={darkMode} />;

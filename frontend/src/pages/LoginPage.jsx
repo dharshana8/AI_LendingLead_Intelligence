@@ -2,21 +2,35 @@ import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 
 const BRANCHES = ["Mumbai Main", "Delhi Central", "Bangalore Tech", "Chennai South", "HQ Mumbai"];
-const ROLES = [{ value: "rm", label: "Relationship Manager" }, { value: "bm", label: "Branch Manager" }, { value: "admin", label: "Administrator" }];
+const ROLES = [
+  { value: "rm", label: "Relationship Manager" },
+  { value: "bm", label: "Branch Manager" },
+  { value: "admin", label: "Administrator" },
+];
+
+const DS = {
+  navy: "#0E1A2B", navy2: "#152540",
+  gold: "#C79A3D", goldSoft: "#F1E3C3",
+  teal: "#2F6E63", tealSoft: "#DCEAE6",
+  rust: "#B5482F", rustSoft: "#F3DDD4",
+  ink: "#12181F", ink2: "#5C6672",
+  bg: "#F5F3ED", card: "#FFFFFF", border: "#E4DFD1",
+  textDark: "#E8ECF2", textMuted: "#8CA0BC",
+};
 
 export default function LoginPage() {
   const { login, register, addToast } = useApp();
-  const [tab, setTab] = useState("login"); // login | register
+  const [tab, setTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  // Login form
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
-
-  // Register form
-  const [reg, setReg] = useState({ employeeId: "", password: "", confirmPassword: "", name: "", role: "rm", branch: "Mumbai Main", email: "", phone: "" });
+  const [reg, setReg] = useState({
+    employeeId: "", password: "", confirmPassword: "",
+    name: "", role: "rm", branch: "Mumbai Main", email: "", phone: "",
+  });
 
   const handleLogin = async (e) => {
     e?.preventDefault();
@@ -40,11 +54,7 @@ export default function LoginPage() {
     if (reg.password !== reg.confirmPassword) { setError("Passwords do not match"); return; }
     setLoading(true);
     const result = await register({ employeeId: reg.employeeId, password: reg.password, name: reg.name, role: reg.role, branch: reg.branch, email: reg.email, phone: reg.phone });
-    if (!result.success) {
-      setLoading(false);
-      setError(result.error);
-      return;
-    }
+    if (!result.success) { setLoading(false); setError(result.error); return; }
     const loginResult = await login(reg.employeeId, reg.password);
     setLoading(false);
     if (!loginResult.success) setError(loginResult.error);
@@ -52,216 +62,206 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'Inter','Segoe UI',system-ui,sans-serif", background: "#f5f7fb" }}>
+    <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", background: DS.bg }}>
       <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        input::placeholder { color: #9ca3af; }
+        .lp-input::placeholder { color: #A89880; }
+        .lp-input:focus { border-color: ${DS.gold} !important; outline: none; }
+        .lp-select:focus { border-color: ${DS.gold} !important; outline: none; }
       `}</style>
 
-      {/* LEFT — Branding */}
+      {/* LEFT — Navy branding panel */}
       <div style={{
-        flex: 1, background: "linear-gradient(160deg,#0f2460 0%,#1e40af 60%,#1d4ed8 100%)",
-        display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-        padding: "60px 48px", position: "relative", overflow: "hidden", minWidth: 0,
+        flex: 1, background: DS.navy, display: "flex", flexDirection: "column",
+        justifyContent: "center", padding: "60px 56px", minWidth: 0, position: "relative", overflow: "hidden",
       }}>
-        {/* decorative circles */}
-        <div style={{ position: "absolute", top: "-120px", right: "-120px", width: "420px", height: "420px", borderRadius: "50%", background: "rgba(255,255,255,0.03)" }} />
-        <div style={{ position: "absolute", bottom: "-80px", left: "-80px", width: "320px", height: "320px", borderRadius: "50%", background: "rgba(255,255,255,0.03)" }} />
+        {/* subtle texture dots */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(199,154,61,0.06) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", maxWidth: "360px", animation: "fadeUp 0.8s ease" }}>
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "40px" }}>
-            <div style={{
-              width: "52px", height: "52px", borderRadius: "14px",
-              background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "20px", fontWeight: "800", color: "#fff",
-            }}>IB</div>
-            <div>
-              <div style={{ fontSize: "18px", fontWeight: "800", color: "#fff", letterSpacing: "-0.3px" }}>IDBI Bank</div>
-              <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", marginTop: "1px" }}>Lead Intelligence Platform</div>
-            </div>
+        <div style={{ position: "relative", maxWidth: "380px", animation: "fadeUp 0.7s ease" }}>
+          {/* Wordmark */}
+          <div style={{ marginBottom: "48px" }}>
+            <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "38px", fontWeight: "700", color: DS.gold, letterSpacing: "-1px", lineHeight: 1 }}>IDBI</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", fontWeight: "500", color: DS.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: "4px" }}>Lending Intelligence</div>
           </div>
 
-          <h1 style={{ fontSize: "30px", fontWeight: "800", color: "#fff", lineHeight: 1.25, marginBottom: "16px" }}>
-            AI-Powered<br />Lending Intelligence
+          <h1 style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "26px", fontWeight: "600", color: DS.textDark, lineHeight: 1.35, marginBottom: "14px" }}>
+            AI-powered lead scoring<br />for relationship managers
           </h1>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.65)", lineHeight: 1.75, marginBottom: "44px" }}>
+          <p style={{ fontSize: "14px", color: DS.textMuted, lineHeight: 1.75, marginBottom: "44px" }}>
             Identify, score, and convert high-value lending leads using machine learning and real-time financial analytics.
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {/* Feature list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {[
-              { icon: "🤖", title: "AI Lead Scoring", sub: "95.95% model accuracy" },
-              { icon: "📊", title: "Predictive Analytics", sub: "Real-time portfolio insights" },
-              { icon: "🎯", title: "Role-Based Access", sub: "RM · Branch Manager · Admin" },
-              { icon: "🔒", title: "Secure & Compliant", sub: "RBI guidelines adherent" },
-            ].map(({ icon, title, sub }) => (
-              <div key={title} style={{
-                display: "flex", alignItems: "center", gap: "14px",
-                background: "rgba(255,255,255,0.07)", borderRadius: "10px",
-                padding: "12px 16px", border: "1px solid rgba(255,255,255,0.1)",
-              }}>
-                <span style={{ fontSize: "18px", flexShrink: 0 }}>{icon}</span>
+              { label: "AI Lead Scoring", sub: "95.95% model accuracy", dot: DS.gold },
+              { label: "Predictive Analytics", sub: "Real-time portfolio insights", dot: DS.teal },
+              { label: "Role-Based Access", sub: "RM · Branch Manager · Admin", dot: DS.gold },
+              { label: "Secure & Compliant", sub: "RBI guidelines adherent", dot: DS.teal },
+            ].map(({ label, sub, dot }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: dot, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#fff" }}>{title}</div>
-                  <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", marginTop: "1px" }}>{sub}</div>
+                  <div style={{ fontSize: "13px", fontWeight: "600", color: DS.textDark }}>{label}</div>
+                  <div style={{ fontSize: "11px", color: DS.textMuted, marginTop: "1px" }}>{sub}</div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Demo credentials */}
+          <div style={{ marginTop: "36px", padding: "14px 16px", background: "rgba(199,154,61,0.08)", border: "1px solid rgba(199,154,61,0.2)", borderRadius: "6px" }}>
+            <div style={{ fontSize: "10px", fontWeight: "700", color: DS.gold, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Demo Credentials</div>
+            {[["RM001", "password123", "Relationship Manager"], ["BM001", "password123", "Branch Manager"], ["ADM001", "admin123", "Administrator"]].map(([id, pw, role]) => (
+              <div key={id} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: DS.gold, minWidth: "60px" }}>{id}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: DS.textMuted }}>{pw}</span>
+                <span style={{ fontSize: "10px", color: DS.textMuted, marginLeft: "auto" }}>{role}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* RIGHT — Form */}
+      {/* RIGHT — Form panel */}
       <div style={{
-        width: "clamp(360px,44%,500px)", background: "#fff",
+        width: "clamp(380px, 44%, 500px)", background: DS.card,
         display: "flex", flexDirection: "column", justifyContent: "center",
-        padding: "48px 44px", overflowY: "auto",
-        boxShadow: "-4px 0 40px rgba(0,0,0,0.06)",
+        padding: "52px 48px", overflowY: "auto",
+        borderLeft: `1px solid ${DS.border}`,
       }}>
-        <div style={{ animation: "fadeUp 0.5s ease" }}>
+        <div style={{ animation: "fadeUp 0.45s ease" }}>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", background: "#f3f4f6", borderRadius: "10px", padding: "4px", marginBottom: "32px" }}>
+          {/* Tab switcher */}
+          <div style={{ display: "flex", background: DS.bg, borderRadius: "6px", padding: "3px", marginBottom: "32px", border: `1px solid ${DS.border}` }}>
             {[["login", "Sign In"], ["register", "Register"]].map(([t, label]) => (
               <button key={t} onClick={() => { setTab(t); setError(""); }}
                 style={{
-                  flex: 1, padding: "9px", borderRadius: "7px", border: "none",
-                  background: tab === t ? "#fff" : "transparent",
-                  color: tab === t ? "#111827" : "#6b7280",
-                  fontSize: "13px", fontWeight: tab === t ? "700" : "500",
-                  cursor: "pointer", transition: "all 0.2s",
-                  boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                  flex: 1, padding: "8px", borderRadius: "4px", border: "none",
+                  background: tab === t ? DS.card : "transparent",
+                  color: tab === t ? DS.ink : DS.ink2,
+                  fontSize: "13px", fontWeight: tab === t ? "600" : "400",
+                  cursor: "pointer", transition: "all 0.18s",
+                  boxShadow: tab === t ? `0 1px 3px rgba(0,0,0,0.08)` : "none",
+                  fontFamily: "'IBM Plex Sans', sans-serif",
                 }}>{label}</button>
             ))}
           </div>
 
+          {/* Error */}
           {error && (
-            <div style={{
-              background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px",
-              padding: "10px 14px", marginBottom: "18px", display: "flex", gap: "8px", alignItems: "center",
-            }}>
-              <span style={{ fontSize: "13px" }}>⚠️</span>
-              <span style={{ fontSize: "13px", color: "#b91c1c", fontWeight: "500" }}>{error}</span>
+            <div style={{ background: DS.rustSoft, border: `1px solid ${DS.rust}`, borderRadius: "6px", padding: "10px 14px", marginBottom: "18px", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+              <span style={{ fontSize: "13px", flexShrink: 0, marginTop: "1px" }}>⚠</span>
+              <span style={{ fontSize: "13px", color: DS.rust, fontWeight: "500" }}>{error}</span>
             </div>
           )}
 
           {tab === "login" ? (
-            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ marginBottom: "4px" }}>
-                <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#111827", margin: 0 }}>Welcome back</h2>
-                <p style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>Sign in to your IDBI dashboard</p>
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "22px", fontWeight: "600", color: DS.ink, marginBottom: "4px" }}>Welcome back</div>
+                <div style={{ fontSize: "13px", color: DS.ink2 }}>Sign in to your IDBI dashboard</div>
               </div>
-
-              <Field label="Employee ID or Email" value={empId} onChange={setEmpId} placeholder="Employee ID or email address" />
-              <PasswordField label="Password" value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(s => !s)} onEnter={handleLogin} />
-
-              <SubmitBtn loading={loading} label="Sign In" />
+              <LPField label="Employee ID or Email" value={empId} onChange={setEmpId} placeholder="e.g. RM001 or name@idbi.co.in" />
+              <LPPasswordField label="Password" value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(s => !s)} onEnter={handleLogin} />
+              <LPSubmitBtn loading={loading} label="Sign In" />
             </form>
           ) : (
             <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div style={{ marginBottom: "4px" }}>
-                <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#111827", margin: 0 }}>Create account</h2>
-                <p style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>Register as an IDBI employee</p>
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "22px", fontWeight: "600", color: DS.ink, marginBottom: "4px" }}>Create account</div>
+                <div style={{ fontSize: "13px", color: DS.ink2 }}>Register as an IDBI employee</div>
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <Field label="Full Name" value={reg.name} onChange={v => setReg(r => ({ ...r, name: v }))} placeholder="Your full name" span />
-                <Field label="Employee ID" value={reg.employeeId} onChange={v => setReg(r => ({ ...r, employeeId: v }))} placeholder="e.g. RM005" />
-                <Field label="Email" value={reg.email} onChange={v => setReg(r => ({ ...r, email: v }))} placeholder="name@idbi.co.in" type="email" />
-                <Field label="Phone" value={reg.phone} onChange={v => setReg(r => ({ ...r, phone: v }))} placeholder="+91 98765 43210" />
+                <LPField label="Full Name" value={reg.name} onChange={v => setReg(r => ({ ...r, name: v }))} placeholder="Your full name" span />
+                <LPField label="Employee ID" value={reg.employeeId} onChange={v => setReg(r => ({ ...r, employeeId: v }))} placeholder="e.g. RM005" />
+                <LPField label="Email" value={reg.email} onChange={v => setReg(r => ({ ...r, email: v }))} placeholder="name@idbi.co.in" type="email" />
+                <LPField label="Phone" value={reg.phone} onChange={v => setReg(r => ({ ...r, phone: v }))} placeholder="+91 98765 43210" />
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <SelectField label="Role" value={reg.role} onChange={v => setReg(r => ({ ...r, role: v }))} options={ROLES} />
-                <SelectField label="Branch" value={reg.branch} onChange={v => setReg(r => ({ ...r, branch: v }))} options={BRANCHES.map(b => ({ value: b, label: b }))} />
+                <LPSelect label="Role" value={reg.role} onChange={v => setReg(r => ({ ...r, role: v }))} options={ROLES} />
+                <LPSelect label="Branch" value={reg.branch} onChange={v => setReg(r => ({ ...r, branch: v }))} options={BRANCHES.map(b => ({ value: b, label: b }))} />
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <PasswordField label="Password" value={reg.password} onChange={v => setReg(r => ({ ...r, password: v }))} show={showPass} onToggle={() => setShowPass(s => !s)} />
-                <PasswordField label="Confirm Password" value={reg.confirmPassword} onChange={v => setReg(r => ({ ...r, confirmPassword: v }))} show={showPass} onToggle={() => setShowPass(s => !s)} />
+                <LPPasswordField label="Password" value={reg.password} onChange={v => setReg(r => ({ ...r, password: v }))} show={showPass} onToggle={() => setShowPass(s => !s)} />
+                <LPPasswordField label="Confirm Password" value={reg.confirmPassword} onChange={v => setReg(r => ({ ...r, confirmPassword: v }))} show={showPass} onToggle={() => setShowPass(s => !s)} />
               </div>
-
-              <SubmitBtn loading={loading} label="Create Account" />
+              <LPSubmitBtn loading={loading} label="Create Account" />
             </form>
           )}
 
-          <p style={{ fontSize: "11px", color: "#d1d5db", textAlign: "center", marginTop: "24px" }}>
-            IDBI Bank · AI Lending Lead Intelligence Platform · v1.0
-          </p>
+          <div style={{ fontSize: "11px", color: "#C8C0B0", textAlign: "center", marginTop: "28px" }}>
+            IDBI Bank · AI Lending Lead Intelligence · v1.0
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text", span }) {
+const inputBase = {
+  width: "100%", padding: "9px 12px",
+  border: `1px solid #E4DFD1`, borderRadius: "6px",
+  fontSize: "13px", color: "#12181F", background: "#FDFCFA",
+  fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+  transition: "border-color 0.18s", boxSizing: "border-box",
+};
+
+function LPField({ label, value, onChange, placeholder, type = "text", span }) {
   return (
     <div style={span ? { gridColumn: "1 / -1" } : {}}>
-      <label style={labelStyle}>{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={inputStyle}
-        onFocus={e => e.target.style.borderColor = "#1e40af"}
-        onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+      <label style={{ fontSize: "11px", fontWeight: "600", color: "#5C6672", display: "block", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+      <input className="lp-input" type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} style={inputBase} />
     </div>
   );
 }
 
-function PasswordField({ label, value, onChange, show, onToggle, onEnter }) {
+function LPPasswordField({ label, value, onChange, show, onToggle, onEnter }) {
   return (
     <div>
-      <label style={labelStyle}>{label}</label>
+      <label style={{ fontSize: "11px", fontWeight: "600", color: "#5C6672", display: "block", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
       <div style={{ position: "relative" }}>
-        <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
-          placeholder="••••••••"
+        <input className="lp-input" type={show ? "text" : "password"} value={value}
+          onChange={e => onChange(e.target.value)} placeholder="••••••••"
           onKeyDown={e => e.key === "Enter" && onEnter?.()}
-          style={{ ...inputStyle, paddingRight: "38px" }}
-          onFocus={e => e.target.style.borderColor = "#1e40af"}
-          onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+          style={{ ...inputBase, paddingRight: "48px" }} />
         <button type="button" onClick={onToggle} style={{
           position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
-          background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "13px", padding: "2px",
+          background: "none", border: "none", cursor: "pointer", color: "#8CA0BC",
+          fontSize: "11px", fontWeight: "600", fontFamily: "'IBM Plex Sans', sans-serif",
         }}>{show ? "Hide" : "Show"}</button>
       </div>
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options }) {
+function LPSelect({ label, value, onChange, options }) {
   return (
     <div>
-      <label style={labelStyle}>{label}</label>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ ...inputStyle, cursor: "pointer", appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
+      <label style={{ fontSize: "11px", fontWeight: "600", color: "#5C6672", display: "block", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+      <select className="lp-select" value={value} onChange={e => onChange(e.target.value)}
+        style={{ ...inputBase, cursor: "pointer", appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235C6672' d='M5 7L1 3h8z'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
   );
 }
 
-function SubmitBtn({ loading, label }) {
+function LPSubmitBtn({ loading, label }) {
   return (
     <button type="submit" disabled={loading} style={{
-      padding: "13px", background: loading ? "#93c5fd" : "linear-gradient(135deg,#1e40af,#2563eb)",
-      color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px",
-      fontWeight: "700", cursor: loading ? "not-allowed" : "pointer",
-      boxShadow: "0 4px 14px rgba(30,64,175,0.3)", transition: "opacity 0.2s",
-      display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "4px",
+      padding: "12px", background: loading ? "#E4DFD1" : "#C79A3D",
+      color: loading ? "#8CA0BC" : "#0E1A2B", border: "none", borderRadius: "6px",
+      fontSize: "13px", fontWeight: "700", cursor: loading ? "not-allowed" : "pointer",
+      fontFamily: "'IBM Plex Sans', sans-serif", letterSpacing: "0.02em",
+      transition: "background 0.18s", display: "flex", alignItems: "center",
+      justifyContent: "center", gap: "8px", marginTop: "4px",
     }}>
-      {loading ? <><Spinner />{label === "Sign In" ? "Signing in..." : "Creating account..."}</> : label}
+      {loading && <div style={{ width: "13px", height: "13px", border: "2px solid rgba(14,26,43,0.2)", borderTop: "2px solid #0E1A2B", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+      {loading ? (label === "Sign In" ? "Signing in..." : "Creating account...") : label}
     </button>
   );
 }
-
-function Spinner() {
-  return <div style={{ width: "14px", height: "14px", border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
-}
-
-const labelStyle = { fontSize: "12px", fontWeight: "600", color: "#374151", display: "block", marginBottom: "5px" };
-const inputStyle = {
-  width: "100%", padding: "10px 12px", border: "1.5px solid #e5e7eb",
-  borderRadius: "8px", fontSize: "13px", outline: "none", color: "#111827",
-  transition: "border-color 0.2s", background: "#fff", boxSizing: "border-box",
-};
