@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import BMDashboardPage from "./pages/BMDashboardPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import CustomersPage from "./pages/CustomersPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -99,8 +101,8 @@ function PageRouter({ activePage, onNavigate }) {
   }
 
   switch (activePage) {
-    case "dashboard":      return <DashboardPage onNavigate={onNavigate} />;
-    case "leads":          return <DashboardPage onNavigate={onNavigate} />;
+    case "dashboard":      return user?.role === "admin" ? <AdminDashboardPage onNavigate={onNavigate} /> : user?.role === "bm" ? <BMDashboardPage onNavigate={onNavigate} /> : <DashboardPage onNavigate={onNavigate} />;
+    case "leads":          return user?.role === "admin" ? <AdminDashboardPage onNavigate={onNavigate} /> : user?.role === "bm" ? <BMDashboardPage onNavigate={onNavigate} /> : <DashboardPage onNavigate={onNavigate} />;
     case "customers":      return <CustomersPage />;
     case "ai-assistant":   return <AIAssistantPage />;
     case "analytics":      return <AnalyticsPage />;
