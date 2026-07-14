@@ -70,25 +70,56 @@ function WhyCard({ lead }) {
   );
 }
 
-function OutreachCard({ lead, onCopy }) {
+function OutreachCard({ lead, onCopy, onMessageChange }) {
   const [copied, setCopied] = useState(false);
+  const [message, setMessage] = useState(lead.outreach);
+  const [regenerating, setRegenerating] = useState(false);
+
+  const updateMessage = (msg) => {
+    setMessage(msg);
+    onMessageChange?.(msg);
+  };
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(lead.outreach).catch(() => {});
+    navigator.clipboard.writeText(message).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     onCopy && onCopy();
   };
+
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    try {
+      const res = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Generate a personalized loan outreach message for this customer:\nName: ${lead.name}\nOccupation: ${lead.occupation}\nIncome: ₹${lead.income?.toLocaleString("en-IN")}\nCIBIL Score: ${lead.cibil}\nRecommended Loan: ${lead.loan}\nAI Score: ${lead.aiScore}\nConversion Probability: ${lead.conversion}%\n\nWrite a short, professional, personalized SMS/WhatsApp outreach message in 3-4 lines. Include the loan type, an estimated eligible amount, and IDBI contact. No subject line.`,
+          history: [],
+        }),
+      });
+      const data = await res.json();
+      if (data.reply) updateMessage(data.reply);
+    } catch {
+      // fallback — keep existing message
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <div style={{ background: "#f9fafb", borderRadius: "10px", padding: "14px", border: "1px solid #e5e7eb" }}>
       <div style={{ fontSize: "12px", fontWeight: "700", color: "#374151", marginBottom: "10px" }}>📨 AI Generated Outreach</div>
       <p style={{ fontSize: "12px", color: "#4b5563", fontStyle: "italic", lineHeight: "1.7", margin: 0, whiteSpace: "pre-line" }}>
-        {lead.outreach}
+        {regenerating ? "✨ Generating new message..." : message}
       </p>
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
         <button onClick={handleCopy} style={btnStyle("#6b7280", "#fff")}>
           {copied ? "✔ Copied" : "📋 Copy"}
         </button>
-        <button style={btnStyle("#1e40af", "#fff")}>🔄 Regenerate</button>
+        <button onClick={handleRegenerate} disabled={regenerating} style={btnStyle(regenerating ? "#93c5fd" : "#1e40af", "#fff")}>
+          {regenerating ? "⏳ Generating..." : "🔄 Regenerate"}
+        </button>
       </div>
     </div>
   );
@@ -217,7 +248,25 @@ function CustomerRecordCard({ lead }) {
 }
 
 export default function DetailPanel({ lead, onClose, onRefresh }) {
-  const { addToast } = useApp();
+  const { addToast, user } = useApp();
+  const [outreachMessage, setOutreachMessage] = useState(lead?.outreach || "");
+
+  useEffect(() => {
+    setOutreachMessage(lead?.outreach || "");
+  }, [lead]);
+
+  const handleInitiateOutreach = async () => {
+    try {
+      await apiUpdateCustomer(lead.id, {
+        status: "Contacted",
+        assigned_to: user?.name || "",
+        last_contact: new Date().toISOString().split("T")[0],
+      });
+      navigator.clipboard.writeText(outreachMessage).catch(() => {});
+      addToast(`Outreach initiated for ${lead.name} — status set to Contacted, message copied`, "success");
+      onRefresh?.();
+    } catch { addToast("Failed to initiate outreach", "error"); }
+  };
 
   const handleDelete = async () => {
     if (!window.confirm(`Remove ${lead.name} from portfolio?`)) return;
@@ -299,7 +348,7 @@ export default function DetailPanel({ lead, onClose, onRefresh }) {
           </div>
 
           <WhyCard lead={lead} />
-          <OutreachCard lead={lead} />
+          <OutreachCard lead={lead} onMessageChange={setOutreachMessage} />
           <CustomerRecordCard lead={lead} />
 
           {/* Initiate Outreach */}
@@ -311,6 +360,7 @@ export default function DetailPanel({ lead, onClose, onRefresh }) {
           }}
             onMouseEnter={e => e.target.style.opacity = "0.9"}
             onMouseLeave={e => e.target.style.opacity = "1"}
+            onClick={handleInitiateOutreach}
           >🚀 Initiate Outreach</button>
 
           {/* Actions */}
