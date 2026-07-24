@@ -19,14 +19,14 @@ Estimated time: 30–40 minutes
 2. Create a project → name it `idbi-lending`
 3. Create a cluster → choose **M0 Free Tier** → region: Mumbai (ap-south-1)
 4. **Database Access** → Add Database User
-   - Username: `idbi_user`
+   - Username: choose any username (e.g. `dbadmin`)
    - Password: generate a strong one → **copy it**
    - Role: Atlas Admin
 5. **Network Access** → Add IP Address → Allow Access from Anywhere (`0.0.0.0/0`)
 6. **Connect** → Drivers → copy the connection string
-   - Looks like: `mongodb+srv://idbi_user:<password>@cluster0.xxxxx.mongodb.net/`
-   - Replace `<password>` with your actual password
-   - Add database name at end: `mongodb+srv://idbi_user:PASSWORD@cluster0.xxxxx.mongodb.net/idbi_lending`
+   - Looks like: `mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/`
+   - Replace `<username>` and `<password>` with your actual values
+   - Add database name at end: `mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/idbi_lending`
    - **Save this URL — needed in Step 2**
 
 ---
@@ -53,7 +53,7 @@ These files are NOT in git (gitignored) — must be generated locally before dep
 5. **Variables** tab → Add these environment variables:
 
 ```
-MONGO_URL       = mongodb+srv://idbi_user:PASSWORD@cluster0.xxxxx.mongodb.net/idbi_lending
+MONGO_URL       = mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/idbi_lending
 MONGO_DB        = idbi_lending
 GROQ_API_KEY    = (get from https://console.groq.com — free account)
 JWT_SECRET      = idbi-lending-super-secret-key-2025-change-this
