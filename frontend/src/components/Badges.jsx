@@ -1,34 +1,64 @@
 import React from "react";
 
+// DS tokens
+const DS = {
+  gold: "#C79A3D", goldSoft: "#F1E3C3",
+  teal: "#2F6E63", tealSoft: "#DCEAE6",
+  rust: "#B5482F", rustSoft: "#F3DDD4",
+  ink: "#12181F", ink2: "#5C6672",
+  border: "#E4DFD1",
+};
+
 export function PriorityBadge({ priority }) {
   const map = {
-    High: { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0" },
-    Medium: { bg: "#fef3c7", color: "#92400e", border: "#fde68a" },
-    Low: { bg: "#fee2e2", color: "#b91c1c", border: "#fecaca" },
+    High:   { bg: DS.goldSoft,  color: DS.gold,  border: "#E8C97A" },
+    Medium: { bg: "#EEF2FF",    color: "#4338CA", border: "#C7D2FE" },
+    Low:    { bg: DS.tealSoft,  color: DS.teal,  border: "#A8CECA" },
   };
   const s = map[priority] || map.Low;
   return (
     <span style={{
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      borderRadius: "20px", padding: "3px 12px", fontSize: "11px", fontWeight: "700",
-      whiteSpace: "nowrap",
+      borderRadius: "3px", padding: "2px 8px", fontSize: "10.5px", fontWeight: "600",
+      whiteSpace: "nowrap", fontFamily: "'IBM Plex Sans', sans-serif",
+      letterSpacing: "0.03em", textTransform: "uppercase",
     }}>{priority}</span>
   );
 }
 
 export function LoanBadge({ icon, loan }) {
   const map = {
-    "Home Loan": { bg: "#eff6ff", color: "#1e40af", border: "#bfdbfe" },
-    "Personal Loan": { bg: "#f5f3ff", color: "#6d28d9", border: "#ddd6fe" },
-    "Auto Loan": { bg: "#ecfdf5", color: "#065f46", border: "#a7f3d0" },
-    "Mortgage Loan": { bg: "#fff7ed", color: "#9a3412", border: "#fed7aa" },
+    "Home Loan":     { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+    "Personal Loan": { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" },
+    "Auto Loan":     { bg: DS.tealSoft, color: DS.teal, border: "#A8CECA" },
+    "Mortgage Loan": { bg: DS.goldSoft, color: "#92400E", border: "#E8C97A" },
   };
   const s = map[loan] || map["Personal Loan"];
   return (
     <span style={{
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      borderRadius: "8px", padding: "4px 10px", fontSize: "11px", fontWeight: "600",
+      borderRadius: "3px", padding: "2px 8px", fontSize: "10.5px", fontWeight: "600",
       whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "4px",
+      fontFamily: "'IBM Plex Sans', sans-serif",
     }}>{icon} {loan}</span>
+  );
+}
+
+export function StatusBadge({ status }) {
+  const map = {
+    New:        { bg: "#F0F4FF", color: "#3B5BDB", border: "#BAC8FF" },
+    Contacted:  { bg: DS.goldSoft, color: "#92400E", border: "#E8C97A" },
+    Interested: { bg: DS.tealSoft, color: DS.teal, border: "#A8CECA" },
+    Applied:    { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" },
+    Converted:  { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
+  };
+  const s = map[status] || map.New;
+  return (
+    <span style={{
+      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+      borderRadius: "3px", padding: "2px 8px", fontSize: "10.5px", fontWeight: "600",
+      whiteSpace: "nowrap", fontFamily: "'IBM Plex Sans', sans-serif",
+      letterSpacing: "0.03em",
+    }}>{status}</span>
   );
 }

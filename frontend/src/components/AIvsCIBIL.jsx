@@ -6,16 +6,13 @@ export default function AIvsCIBIL() {
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
-    if (!dataLoading) {
-      const t = setTimeout(() => setAnimated(true), 300);
-      return () => clearTimeout(t);
-    }
+    if (!dataLoading) { const t = setTimeout(() => setAnimated(true), 300); return () => clearTimeout(t); }
   }, [dataLoading]);
 
-  const cardBg = darkMode ? "#1e293b" : "#fff";
-  const border = darkMode ? "#334155" : "#e5e7eb";
-  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
-  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+  const cardBg = darkMode ? "#152540" : "#FFFFFF";
+  const border = darkMode ? "rgba(255,255,255,0.08)" : "#E4DFD1";
+  const textPrimary = darkMode ? "#E8ECF2" : "#12181F";
+  const textSecondary = darkMode ? "#8CA0BC" : "#5C6672";
 
   const cibilQ = analytics?.cibilQualified ?? 0;
   const aiQ = analytics?.aiQualified ?? 0;
@@ -26,35 +23,30 @@ export default function AIvsCIBIL() {
   const improvement = cibilQ > 0 ? Math.round(((aiQ - cibilQ) / cibilQ) * 100) : 0;
   const potRev = analytics?.potentialRevenue ?? "—";
 
-  if (dataLoading) {
-    return (
-      <div style={{ margin: "20px 28px 0", background: cardBg, borderRadius: "14px", border: `1px solid ${border}`, padding: "24px", height: "180px", animation: "shimmer 1.5s infinite" }} />
-    );
-  }
+  if (dataLoading) return (
+    <div style={{ margin: "16px 24px 0", background: cardBg, borderRadius: "6px", border: `1px solid ${border}`, height: "160px", animation: "shimmer 1.5s infinite" }} />
+  );
 
   return (
-    <div style={{ margin: "20px 28px 0", background: cardBg, borderRadius: "14px", border: `1px solid ${border}`, padding: "24px", boxShadow: "0 4px 10px rgba(0,0,0,0.06)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-        <span style={{ fontSize: "20px" }}>⚖️</span>
-        <span style={{ fontSize: "15px", fontWeight: "700", color: textPrimary }}>AI vs Traditional CIBIL Screening</span>
-        <span style={{ marginLeft: "auto", background: "#dcfce7", color: "#15803d", fontSize: "12px", fontWeight: "700", padding: "4px 12px", borderRadius: "20px" }}>
-          +{improvement}% Better
-        </span>
+    <div style={{ margin: "16px 24px 0", background: cardBg, borderRadius: "6px", border: `1px solid ${border}`, padding: "20px 22px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+        <span style={{ fontSize: "12px", fontWeight: "700", color: textPrimary, fontFamily: "'IBM Plex Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.07em" }}>AI vs Traditional CIBIL Screening</span>
+        <span style={{ marginLeft: "auto", background: "#DCEAE6", color: "#2F6E63", fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "2px", fontFamily: "'IBM Plex Mono', monospace" }}>+{improvement}% BETTER</span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <CompareBar label="Traditional CIBIL Screening" value={cibilPct} color="#94a3b8" leads={cibilQ} animated={animated} textSecondary={textSecondary} />
-        <CompareBar label="AI-Powered Screening" value={aiPct} color="#1e40af" leads={aiQ} animated={animated} highlight textPrimary={textPrimary} textSecondary={textSecondary} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "18px" }}>
+        <Bar label="Traditional CIBIL" value={cibilPct} leads={cibilQ} color="#8CA0BC" animated={animated} textSecondary={textSecondary} />
+        <Bar label="AI-Powered Screening" value={aiPct} leads={aiQ} color="#C79A3D" animated={animated} textSecondary={textSecondary} bold />
       </div>
-      <div style={{ marginTop: "20px", padding: "14px", background: darkMode ? "#0f172a" : "#eff6ff", borderRadius: "10px", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, display: "flex", gap: "24px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${border}`, paddingTop: "16px", flexWrap: "wrap" }}>
         {[
-          { label: "Leads Missed by CIBIL", value: String(missed), color: "#ef4444" },
-          { label: "Extra Conversion Value", value: potRev, color: "#22c55e" },
-          { label: "Accuracy Improvement", value: `+${improvement}%`, color: "#1e40af" },
-          { label: "Processing Time Saved", value: "4 hrs", color: "#f59e0b" },
+          { label: "Missed by CIBIL", value: String(missed), color: "#B5482F" },
+          { label: "Extra Revenue",   value: potRev,          color: "#2F6E63" },
+          { label: "Improvement",     value: `+${improvement}%`, color: "#C79A3D" },
+          { label: "Time Saved",      value: "4 hrs",         color: "#5C6672" },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ flex: "1 1 120px", textAlign: "center" }}>
-            <div style={{ fontSize: "22px", fontWeight: "800", color }}>{value}</div>
-            <div style={{ fontSize: "11px", color: textSecondary, marginTop: "2px" }}>{label}</div>
+          <div key={label} style={{ flex: "1 1 100px", textAlign: "center", padding: "0 8px" }}>
+            <div style={{ fontSize: "20px", fontWeight: "700", color, fontFamily: "'IBM Plex Mono', monospace" }}>{value}</div>
+            <div style={{ fontSize: "10px", color: textSecondary, marginTop: "3px", fontFamily: "'IBM Plex Sans', sans-serif" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -62,17 +54,15 @@ export default function AIvsCIBIL() {
   );
 }
 
-function CompareBar({ label, value, color, leads, animated, highlight, textPrimary, textSecondary }) {
+function Bar({ label, value, leads, color, animated, textSecondary, bold }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-        <span style={{ fontSize: "13px", fontWeight: highlight ? "700" : "500", color: highlight ? textPrimary : textSecondary }}>{label}</span>
-        <span style={{ fontSize: "13px", fontWeight: "700", color }}>{leads} Qualified Leads</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+        <span style={{ fontSize: "11px", fontWeight: bold ? "600" : "400", color: bold ? "#12181F" : textSecondary, fontFamily: "'IBM Plex Sans', sans-serif" }}>{label}</span>
+        <span style={{ fontSize: "11px", fontWeight: "600", color, fontFamily: "'IBM Plex Mono', monospace" }}>{leads} leads</span>
       </div>
-      <div style={{ height: "14px", background: "#f3f4f6", borderRadius: "10px", overflow: "hidden" }}>
-        <div style={{ height: "100%", background: color, borderRadius: "10px", width: animated ? `${value}%` : "0%", transition: "width 1.2s ease", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "8px" }}>
-          {animated && value > 10 && <span style={{ fontSize: "9px", color: "#fff", fontWeight: "700" }}>{value}%</span>}
-        </div>
+      <div style={{ height: "8px", background: "#E4DFD1", borderRadius: "2px", overflow: "hidden" }}>
+        <div style={{ height: "100%", background: color, borderRadius: "2px", width: animated ? `${value}%` : "0%", transition: "width 1.2s ease" }} />
       </div>
     </div>
   );

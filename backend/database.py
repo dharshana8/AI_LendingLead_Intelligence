@@ -13,6 +13,7 @@ db = client[DB_NAME]
 
 leads_col = db["leads"]
 users_col = db["users"]
+audit_col = db["audit_logs"]
 
 async def get_next_sequence_value(sequence_name: str) -> int:
     result = await db["counters"].find_one_and_update(

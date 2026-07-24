@@ -1,38 +1,45 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { T } from "../tokens";
+import { useInView } from "../hooks";
 
-const signalConfig = [
-  { key: "salaryStability", label: "Salary Stability", color: "#3b82f6" },
-  { key: "repaymentCapacity", label: "Repayment Capacity", color: "#22c55e" },
-  { key: "savingsRatio", label: "Savings Ratio", color: "#14b8a6" },
-  { key: "loanIntent", label: "Loan Intent", color: "#8b5cf6" },
-  { key: "creditHealth", label: "Credit Health", color: "#f59e0b" },
-  { key: "cibilContribution", label: "CIBIL Contribution", color: "#6366f1" },
+const SIGNALS = [
+  { key: "salaryStability",   label: "Salary Stability",   color: T.teal },
+  { key: "repaymentCapacity", label: "Repayment Capacity", color: T.gold },
+  { key: "savingsRatio",      label: "Savings Ratio",      color: T.teal },
+  { key: "loanIntent",        label: "Loan Intent",        color: T.gold },
+  { key: "creditHealth",      label: "Credit Health",      color: T.teal },
+  { key: "cibilContribution", label: "CIBIL Contribution", color: T.gold },
 ];
 
-export default function SignalBars({ signals }) {
-  const [animated, setAnimated] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 150);
-    return () => clearTimeout(t);
-  }, [signals]);
+export default function SignalBars({ signals = {} }) {
+  const [ref, inView] = useInView({ threshold: 0.1 });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      {signalConfig.map(({ key, label, color }) => (
-        <div key={key}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-            <span style={{ fontSize: "12px", color: "#374151", fontWeight: "500" }}>{label}</span>
-            <span style={{ fontSize: "12px", fontWeight: "700", color }}>{signals[key]}%</span>
+    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {SIGNALS.map(({ key, label, color }, i) => {
+        const val = Math.min(100, Math.max(0, signals[key] ?? 0));
+        return (
+          <div key={key}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ fontSize: "11px", color: T.sub, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                {label}
+              </span>
+              <span style={{ fontSize: "11px", fontWeight: "600", color, fontFamily: "'IBM Plex Mono', monospace" }}>
+                {val}%
+              </span>
+            </div>
+            <div style={{ height: "5px", background: T.line, borderRadius: "3px", overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                background: color,
+                borderRadius: "3px",
+                width: inView ? `${val}%` : "0%",
+                transition: `width 0.85s cubic-bezier(0.4,0,0.2,1) ${i * 80}ms`,
+              }} />
+            </div>
           </div>
-          <div style={{ height: "7px", background: "#f3f4f6", borderRadius: "10px", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", background: color, borderRadius: "10px",
-              width: animated ? `${signals[key]}%` : "0%",
-              transition: "width 0.9s ease",
-            }} />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

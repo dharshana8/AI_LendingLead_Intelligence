@@ -2,28 +2,22 @@ import React, { useEffect, useState } from "react";
 
 export default function ProgressBar({ value, animate = true }) {
   const [width, setWidth] = useState(0);
-  const color = value >= 80 ? "#22c55e" : value >= 65 ? "#f59e0b" : "#ef4444";
+  const color = value >= 80 ? "#2F6E63" : value >= 65 ? "#C79A3D" : "#B5482F";
 
   useEffect(() => {
-    if (animate) {
-      const t = setTimeout(() => setWidth(value), 100);
-      return () => clearTimeout(t);
-    } else {
-      setWidth(value);
-    }
+    const t = setTimeout(() => setWidth(value), animate ? 100 : 0);
+    return () => clearTimeout(t);
   }, [value, animate]);
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      <div style={{
-        flex: 1, height: "7px", background: "#f3f4f6", borderRadius: "10px", overflow: "hidden",
-      }}>
+      <div style={{ flex: 1, height: "5px", background: "#E4DFD1", borderRadius: "2px", overflow: "hidden" }}>
         <div style={{
           height: "100%", width: `${width}%`, background: color,
-          borderRadius: "10px", transition: "width 1s ease",
+          borderRadius: "2px", transition: "width 1s ease",
         }} />
       </div>
-      <span style={{ fontSize: "12px", fontWeight: "700", color, minWidth: "28px" }}>{value}</span>
+      <span style={{ fontSize: "11px", fontWeight: "600", color, minWidth: "24px", fontFamily: "'IBM Plex Mono', monospace" }}>{value}</span>
     </div>
   );
 }

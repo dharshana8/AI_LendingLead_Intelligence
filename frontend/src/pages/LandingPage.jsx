@@ -1,253 +1,170 @@
 import React, { useState, useEffect } from "react";
+import { BRAND } from "../App";
+
+const DS = {
+  navy: "#0E1A2B", navy2: "#152540",
+  gold: "#C79A3D", goldSoft: "#F1E3C3",
+  teal: "#2F6E63", tealSoft: "#DCEAE6",
+  rust: "#B5482F",
+  ink: "#12181F", ink2: "#5C6672",
+  bg: "#F5F3ED", card: "#FFFFFF", border: "#E4DFD1",
+  textDark: "#E8ECF2", textMuted: "#8CA0BC",
+};
 
 const features = [
-  { icon: "🤖", title: "AI Lead Scoring", desc: "Machine learning models score every lead in real-time with 94% accuracy" },
+  { icon: "🤖", title: "AI Lead Scoring", desc: "RandomForest model scores every lead in real-time with 95.95% accuracy" },
   { icon: "📊", title: "Predictive Analytics", desc: "Forecast conversion probability before the first customer call" },
   { icon: "🎯", title: "Smart Targeting", desc: "Identify high-intent customers missed by traditional CIBIL screening" },
   { icon: "⚡", title: "Instant Insights", desc: "Get actionable recommendations in under 2 seconds per customer" },
   { icon: "🔒", title: "Bank-Grade Security", desc: "End-to-end encryption with RBI-compliant data handling" },
-  { icon: "📱", title: "Omnichannel Ready", desc: "Works seamlessly across desktop, tablet, and mobile devices" },
-];
-
-const stats = [
-  { value: "94%", label: "AI Accuracy" },
-  { value: "+50%", label: "More Leads Found" },
-  { value: "₹4.8Cr", label: "Potential Business" },
-  { value: "3x", label: "Faster Screening" },
+  { icon: "📱", title: "Role-Based Access", desc: "RM · Branch Manager · Admin — each with tailored dashboards" },
 ];
 
 const steps = [
-  { step: "01", title: "Data Ingestion", desc: "Customer financial data is securely ingested from CBS and CRM systems" },
-  { step: "02", title: "AI Feature Extraction", desc: "28 financial signals extracted including salary stability, EMI burden, savings ratio" },
-  { step: "03", title: "ML Scoring", desc: "Gradient boosting model assigns a 0–100 AI score with confidence interval" },
+  { step: "01", title: "Data Ingestion", desc: "Customer financial data securely ingested from CBS and CRM systems" },
+  { step: "02", title: "Feature Extraction", desc: "28 financial signals extracted: salary stability, EMI burden, savings ratio" },
+  { step: "03", title: "ML Scoring", desc: "RandomForest assigns a 0–100 AI score with SHAP explainability" },
   { step: "04", title: "RM Recommendation", desc: "Relationship Manager receives ranked leads with outreach scripts" },
 ];
 
-function CountUp({ target, suffix = "" }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const num = parseFloat(target.replace(/[^0-9.]/g, ""));
-    const step = num / 40;
-    let current = 0;
-    const t = setInterval(() => {
-      current = Math.min(current + step, num);
-      setCount(Math.floor(current));
-      if (current >= num) clearInterval(t);
-    }, 30);
-    return () => clearInterval(t);
-  }, [target]);
-  return <>{target.startsWith("₹") ? "₹" : ""}{count}{target.includes("%") ? "%" : ""}{target.includes("x") ? "x" : ""}{target.startsWith("+") ? "+" : ""}</>;
-}
-
 export default function LandingPage({ onLogin }) {
-  const [navHover, setNavHover] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", fn);
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
 
   return (
-    <div style={{ fontFamily: "'Inter','Segoe UI',system-ui,sans-serif", background: "#fff", overflowX: "hidden" }}>
+    <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", background: DS.bg, overflowX: "hidden" }}>
       <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0} }
       `}</style>
 
       {/* NAV */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
-        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #e5e7eb", padding: "0 40px", height: "64px",
+        background: scrolled ? DS.navy : "transparent",
+        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none",
+        padding: "0 40px", height: "64px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
+        transition: "background 0.3s",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "36px", height: "36px", borderRadius: "8px",
-            background: "linear-gradient(135deg,#1e40af,#3b82f6)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "14px", fontWeight: "800", color: "#fff",
-          }}>IB</div>
-          <span style={{ fontSize: "15px", fontWeight: "700", color: "#111827" }}>IDBI Lead Intelligence</span>
+          <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "22px", fontWeight: "700", color: DS.gold, letterSpacing: "-0.5px" }}>{BRAND}</span>
+          <span style={{ fontSize: "12px", color: scrolled ? DS.textMuted : DS.ink2, fontWeight: "500", letterSpacing: "0.1em", textTransform: "uppercase" }}>Lending Intelligence</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {["Features", "How It Works", "Contact"].map(item => (
-            <button key={item}
-              onMouseEnter={() => setNavHover(item)}
-              onMouseLeave={() => setNavHover(null)}
-              style={{
-                background: "none", border: "none", padding: "8px 14px",
-                fontSize: "13px", fontWeight: "500", cursor: "pointer",
-                color: navHover === item ? "#1e40af" : "#374151",
-                borderRadius: "6px", transition: "color 0.2s",
-              }}>{item}</button>
-          ))}
-          <button onClick={onLogin} style={{
-            padding: "9px 22px", background: "linear-gradient(135deg,#1e40af,#3b82f6)",
-            color: "#fff", border: "none", borderRadius: "8px",
-            fontSize: "13px", fontWeight: "600", cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(30,64,175,0.3)", transition: "opacity 0.2s",
-          }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-          >Login →</button>
-        </div>
+        <button onClick={onLogin} style={{
+          padding: "8px 22px", background: DS.gold, color: DS.navy,
+          border: "none", borderRadius: "4px", fontSize: "12px", fontWeight: "700",
+          cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif",
+        }}>Sign In →</button>
       </nav>
 
-      {/* HERO */}
-      <section style={{
-        background: "linear-gradient(135deg,#1e3a8a 0%,#1e40af 40%,#2563eb 100%)",
-        padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: "-80px", right: "-80px", width: "400px", height: "400px",
-          borderRadius: "50%", background: "rgba(255,255,255,0.04)",
-        }} />
-        <div style={{
-          position: "absolute", bottom: "-60px", left: "-60px", width: "300px", height: "300px",
-          borderRadius: "50%", background: "rgba(255,255,255,0.04)",
-        }} />
-        <div style={{ position: "relative", maxWidth: "760px", margin: "0 auto", animation: "fadeUp 0.8s ease" }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.4)",
-            borderRadius: "20px", padding: "6px 16px", marginBottom: "24px",
-          }}>
-            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", animation: "pulse 1.5s infinite" }} />
-            <span style={{ color: "#86efac", fontSize: "12px", fontWeight: "600" }}>IDBI Bank Hackathon 2026 · AI-Powered Banking</span>
+      {/* HERO — navy dark panel */}
+      <section style={{ background: DS.navy, padding: "80px 40px 60px", position: "relative", overflow: "hidden" }}>
+        {/* subtle dot grid */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(199,154,61,0.05) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
+
+        <div style={{ position: "relative", maxWidth: "760px", margin: "0 auto", textAlign: "center", animation: "fadeUp 0.7s ease" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(47,110,99,0.15)", border: "1px solid rgba(47,110,99,0.3)", borderRadius: "3px", padding: "5px 14px", marginBottom: "28px" }}>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: DS.teal, animation: "blink 1.5s infinite" }} />
+            <span style={{ color: DS.teal, fontSize: "11px", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'IBM Plex Mono', monospace" }}>Hackathon 2026 · AI-Powered Banking</span>
           </div>
-          <h1 style={{ fontSize: "clamp(28px,5vw,52px)", fontWeight: "800", color: "#fff", lineHeight: 1.15, marginBottom: "20px" }}>
+
+          <h1 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(36px,6vw,68px)", fontWeight: "700", color: DS.textDark, lineHeight: 1.15, marginBottom: "20px" }}>
             AI-Powered Lending<br />
-            <span style={{ color: "#93c5fd" }}>Lead Intelligence</span> Platform
+            <span style={{ color: DS.gold }}>Lead Intelligence</span> Platform
           </h1>
-          <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: "36px", maxWidth: "560px", margin: "0 auto 36px" }}>
-            Transform how IDBI Relationship Managers identify, score, and convert high-value lending leads using cutting-edge machine learning.
+          <p style={{ fontSize: "18px", color: DS.textMuted, lineHeight: 1.75, marginBottom: "36px", maxWidth: "520px", margin: "0 auto 36px" }}>
+            Transform how Relationship Managers identify, score, and convert high-value lending leads using machine learning and real-time financial analytics.
           </p>
+
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={onLogin} style={{
-              padding: "14px 32px", background: "#fff", color: "#1e40af",
-              border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "700",
-              cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", transition: "transform 0.2s",
+              padding: "15px 36px", background: DS.gold, color: DS.navy,
+              border: "none", borderRadius: "4px", fontSize: "16px", fontWeight: "700",
+              cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif",
+              boxShadow: "0 4px 20px rgba(199,154,61,0.3)", transition: "opacity 0.2s",
             }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >🚀 Launch Dashboard</button>
-            <button style={{
-              padding: "14px 32px", background: "rgba(255,255,255,0.15)",
-              color: "#fff", border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "10px", fontSize: "14px", fontWeight: "600", cursor: "pointer",
-              transition: "background 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
-            >▶ Watch Demo</button>
-          </div>
-        </div>
-
-        {/* Floating dashboard preview card */}
-        <div style={{
-          maxWidth: "700px", margin: "52px auto 0",
-          background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)",
-          borderRadius: "16px", border: "1px solid rgba(255,255,255,0.2)",
-          padding: "20px", animation: "float 4s ease-in-out infinite",
-        }}>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
-            {[["👥","20","Total Leads"],["🔥","7","High Priority"],["🤖","82","AI Score"],["📈","34%","Conversion"],["💰","₹4.8Cr","Business"]].map(([icon,val,lbl]) => (
-              <div key={lbl} style={{
-                background: "rgba(255,255,255,0.15)", borderRadius: "10px",
-                padding: "12px 16px", textAlign: "center", minWidth: "90px",
-              }}>
-                <div style={{ fontSize: "18px" }}>{icon}</div>
-                <div style={{ fontSize: "18px", fontWeight: "800", color: "#fff" }}>{val}</div>
-                <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.7)" }}>{lbl}</div>
-              </div>
-            ))}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >Launch Dashboard →</button>
           </div>
         </div>
       </section>
 
-      {/* STATS */}
-      <section style={{ background: "#1e40af", padding: "40px" }}>
+      {/* STATS BAR */}
+      <section style={{ background: DS.navy2, borderTop: "1px solid rgba(255,255,255,0.06)", padding: "32px 40px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: "60px", flexWrap: "wrap" }}>
-          {stats.map(({ value, label }) => (
-            <div key={label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "36px", fontWeight: "800", color: "#fff" }}>
-                <CountUp target={value} />
-              </div>
-              <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>{label}</div>
+          {[["95.95%","AI Accuracy"],["+50%","More Leads Found"],["₹4.8Cr","Potential Business"],["3x","Faster Screening"]].map(([val, lbl]) => (
+            <div key={lbl} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "42px", fontWeight: "800", color: DS.gold, fontFamily: "'IBM Plex Mono', monospace" }}>{val}</div>
+              <div style={{ fontSize: "15px", color: DS.textMuted, marginTop: "6px" }}>{lbl}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* FEATURES */}
-      <section style={{ padding: "80px 40px", background: "#f5f7fb" }}>
+      <section style={{ padding: "80px 40px", background: DS.bg }}>
         <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.1em" }}>Platform Features</span>
-          <h2 style={{ fontSize: "32px", fontWeight: "800", color: "#111827", marginTop: "8px" }}>Built for Modern Banking</h2>
-          <p style={{ fontSize: "15px", color: "#6b7280", marginTop: "10px" }}>Everything a Relationship Manager needs to close more loans</p>
+          <div style={{ fontSize: "10px", fontWeight: "700", color: DS.gold, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px", fontFamily: "'IBM Plex Mono', monospace" }}>Platform Features</div>
+          <h2 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "36px", fontWeight: "700", color: DS.ink }}>Built for Modern Banking</h2>
+          <p style={{ fontSize: "16px", color: DS.ink2, marginTop: "10px" }}>Everything a Relationship Manager needs to close more loans</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: "20px", maxWidth: "1100px", margin: "0 auto" }}>
-          {features.map(({ icon, title, desc }) => (
-            <FeatureCard key={title} icon={icon} title={title} desc={desc} />
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: "16px", maxWidth: "1100px", margin: "0 auto" }}>
+          {features.map(f => <FeatureCard key={f.title} {...f} />)}
         </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ padding: "80px 40px", background: "#fff" }}>
+      <section style={{ padding: "80px 40px", background: DS.card, borderTop: `1px solid ${DS.border}`, borderBottom: `1px solid ${DS.border}` }}>
         <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.1em" }}>Process</span>
-          <h2 style={{ fontSize: "32px", fontWeight: "800", color: "#111827", marginTop: "8px" }}>How AI Works</h2>
+          <div style={{ fontSize: "10px", fontWeight: "700", color: DS.gold, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px", fontFamily: "'IBM Plex Mono', monospace" }}>Process</div>
+          <h2 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "36px", fontWeight: "700", color: DS.ink }}>How AI Works</h2>
         </div>
         <div style={{ display: "flex", gap: "0", maxWidth: "900px", margin: "0 auto", flexWrap: "wrap" }}>
           {steps.map(({ step, title, desc }, i) => (
             <div key={step} style={{ flex: "1 1 200px", textAlign: "center", padding: "20px", position: "relative" }}>
               {i < steps.length - 1 && (
-                <div style={{
-                  position: "absolute", top: "32px", right: "-1px", width: "50%",
-                  height: "2px", background: "linear-gradient(90deg,#1e40af,#93c5fd)",
-                  display: "none",
-                }} />
+                <div style={{ position: "absolute", top: "28px", right: 0, width: "50%", height: "1px", background: DS.border }} />
               )}
-              <div style={{
-                width: "56px", height: "56px", borderRadius: "50%",
-                background: "linear-gradient(135deg,#1e40af,#3b82f6)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "16px", fontWeight: "800", color: "#fff",
-                margin: "0 auto 16px", boxShadow: "0 8px 20px rgba(30,64,175,0.3)",
-              }}>{step}</div>
-              <h3 style={{ fontSize: "15px", fontWeight: "700", color: "#111827", marginBottom: "8px" }}>{title}</h3>
-              <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6 }}>{desc}</p>
+              <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: DS.navy, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "800", color: DS.gold, margin: "0 auto 16px", fontFamily: "'IBM Plex Mono', monospace" }}>{step}</div>
+              <h3 style={{ fontSize: "14px", fontWeight: "700", color: DS.ink, marginBottom: "8px" }}>{title}</h3>
+              <p style={{ fontSize: "12px", color: DS.ink2, lineHeight: 1.65 }}>{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section style={{
-        background: "linear-gradient(135deg,#1e3a8a,#1e40af)",
-        padding: "80px 40px", textAlign: "center",
-      }}>
-        <h2 style={{ fontSize: "32px", fontWeight: "800", color: "#fff", marginBottom: "16px" }}>
+      <section style={{ background: DS.navy, padding: "80px 40px", textAlign: "center" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(199,154,61,0.04) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
+        <h2 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "36px", fontWeight: "700", color: DS.textDark, marginBottom: "14px" }}>
           Ready to Transform Your Lending Pipeline?
         </h2>
-        <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.75)", marginBottom: "32px" }}>
-          Join IDBI's AI-powered future. Start identifying high-value leads today.
+        <p style={{ fontSize: "16px", color: DS.textMuted, marginBottom: "32px" }}>
+          Start identifying high-value leads today.
         </p>
         <button onClick={onLogin} style={{
-          padding: "16px 40px", background: "#fff", color: "#1e40af",
-          border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: "700",
-          cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-          transition: "transform 0.2s",
+          padding: "16px 44px", background: DS.gold, color: DS.navy,
+          border: "none", borderRadius: "4px", fontSize: "16px", fontWeight: "700",
+          cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif",
+          boxShadow: "0 4px 20px rgba(199,154,61,0.3)", transition: "opacity 0.2s",
         }}
-          onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-          onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-        >Get Started — Login Now →</button>
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+        >Get Started — Sign In Now →</button>
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: "#111827", padding: "24px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-        <span style={{ fontSize: "13px", color: "#6b7280" }}>© 2026 IDBI Bank Hackathon · AI Lending Lead Intelligence Platform</span>
+      <footer style={{ background: DS.navy2, borderTop: "1px solid rgba(255,255,255,0.06)", padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <span style={{ fontSize: "11px", color: DS.textMuted, fontFamily: "'IBM Plex Mono', monospace" }}>© 2026 {BRAND} · AI Lending Lead Intelligence Platform</span>
         <div style={{ display: "flex", gap: "20px" }}>
           {["Privacy Policy", "Terms", "Contact"].map(t => (
-            <span key={t} style={{ fontSize: "12px", color: "#6b7280", cursor: "pointer" }}>{t}</span>
+            <span key={t} style={{ fontSize: "11px", color: DS.textMuted, cursor: "pointer" }}>{t}</span>
           ))}
         </div>
       </footer>
@@ -256,26 +173,18 @@ export default function LandingPage({ onLogin }) {
 }
 
 function FeatureCard({ icon, title, desc }) {
-  const [hovered, setHovered] = useState(false);
+  const [h, setH] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
-        background: "#fff", borderRadius: "14px", padding: "24px",
-        border: "1px solid #e5e7eb",
-        boxShadow: hovered ? "0 12px 28px rgba(0,0,0,0.1)" : "0 4px 10px rgba(0,0,0,0.05)",
-        transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        transition: "all 0.25s ease",
-      }}
-    >
-      <div style={{
-        width: "48px", height: "48px", borderRadius: "12px", background: "#eff6ff",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "22px", marginBottom: "16px",
-      }}>{icon}</div>
-      <h3 style={{ fontSize: "15px", fontWeight: "700", color: "#111827", marginBottom: "8px" }}>{title}</h3>
-      <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6 }}>{desc}</p>
+        background: DS.card, borderRadius: "6px", padding: "22px",
+        border: `1px solid ${h ? DS.gold : DS.border}`,
+        boxShadow: h ? "0 8px 24px rgba(0,0,0,0.08)" : "0 1px 4px rgba(0,0,0,0.04)",
+        transform: h ? "translateY(-3px)" : "none", transition: "all 0.2s",
+      }}>
+      <div style={{ width: "44px", height: "44px", borderRadius: "6px", background: DS.goldSoft, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", marginBottom: "14px" }}>{icon}</div>
+      <h3 style={{ fontSize: "14px", fontWeight: "700", color: DS.ink, marginBottom: "8px" }}>{title}</h3>
+      <p style={{ fontSize: "12px", color: DS.ink2, lineHeight: 1.65 }}>{desc}</p>
     </div>
   );
 }

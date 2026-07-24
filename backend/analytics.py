@@ -20,6 +20,7 @@ async def get_analytics() -> dict:
             "loan_distribution": {},
             "ai_vs_cibil": {},
             "potential_business_value": 0.0,
+            "funnel": [],
         }
 
     high = sum(1 for l in leads if l.get("priority") == "High")
@@ -34,8 +35,22 @@ async def get_analytics() -> dict:
         loan = l.get("recommended_loan", "")
         loan_dist[loan] = loan_dist.get(loan, 0) + 1
 
-    # AI qualified: ai_score >= 65
+    # Conversion funnel — strict subset counts by status
     ai_qualified = sum(1 for l in leads if l.get("ai_score", 0.0) >= 65)
+    contacted    = sum(1 for l in leads if l.get("status") in ("Contacted", "Interested", "Applied", "Converted"))
+    interested   = sum(1 for l in leads if l.get("status") in ("Interested", "Applied", "Converted"))
+    applied      = sum(1 for l in leads if l.get("status") in ("Applied", "Converted"))
+    converted    = sum(1 for l in leads if l.get("status") == "Converted")
+
+    funnel = [
+        {"stage": "Total Leads",  "count": total,        "color": "#0E1A2B"},
+        {"stage": "AI Qualified", "count": ai_qualified, "color": "#C79A3D"},
+        {"stage": "Contacted",    "count": contacted,    "color": "#2F6E63"},
+        {"stage": "Interested",   "count": interested,   "color": "#2F6E63"},
+        {"stage": "Applied",      "count": applied,      "color": "#C79A3D"},
+        {"stage": "Converted",    "count": converted,    "color": "#2F6E63"},
+    ]
+
     # Traditional CIBIL qualified: cibil_score >= 700
     cibil_qualified = sum(1 for l in leads if l.get("cibil_score", 0) >= 700)
     improvement_pct = (
@@ -59,4 +74,5 @@ async def get_analytics() -> dict:
             "improvement_percent": improvement_pct,
         },
         "potential_business_value": potential_value,
+        "funnel": funnel,
     }

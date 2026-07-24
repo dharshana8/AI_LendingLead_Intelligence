@@ -1,85 +1,200 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
+import * as XLSX from "xlsx";
+
+const DS = {
+  bg: "#F5F3ED", card: "#FFFFFF", border: "#E4DFD1",
+  navy: "#0E1A2B", gold: "#C79A3D", goldSoft: "#F1E3C3",
+  teal: "#2F6E63", tealSoft: "#DCEAE6",
+  rust: "#B5482F", rustSoft: "#F3DDD4",
+  ink: "#12181F", ink2: "#5C6672",
+};
 
 const REPORTS = [
-  { id: 1, name: "AI Lead Scoring Report", desc: "Complete AI scores and conversion probabilities for all 20 leads", type: "AI", date: "Today, 9:00 AM", size: "2.4 MB", status: "Ready" },
-  { id: 2, name: "Monthly Conversion Summary", desc: "June 2025 lead conversion rates, revenue, and branch performance", type: "Monthly", date: "Today, 8:30 AM", size: "1.8 MB", status: "Ready" },
-  { id: 3, name: "Customer Portfolio Report", desc: "Full customer details with CIBIL, income, and loan recommendations", type: "Portfolio", date: "Yesterday", size: "3.1 MB", status: "Ready" },
-  { id: 4, name: "AI vs CIBIL Comparison", desc: "Detailed comparison of AI screening vs traditional CIBIL methods", type: "Analysis", date: "Yesterday", size: "1.2 MB", status: "Ready" },
-  { id: 5, name: "Branch Performance Report", desc: "All branch metrics including leads, conversions, and revenue", type: "Branch", date: "2 days ago", size: "0.9 MB", status: "Ready" },
-  { id: 6, name: "High Priority Leads Export", desc: "7 high-priority leads with full AI analysis and outreach scripts", type: "Leads", date: "2 days ago", size: "0.7 MB", status: "Ready" },
-  { id: 7, name: "Audit Trail Report", desc: "Complete user activity log for compliance and review", type: "Audit", date: "3 days ago", size: "4.2 MB", status: "Ready" },
-  { id: 8, name: "Quarterly Business Review", desc: "Q2 2025 lending performance with AI insights and forecasts", type: "Quarterly", date: "1 week ago", size: "5.6 MB", status: "Ready" },
+  { id: 1, name: "AI Lead Scoring Report",     desc: "Complete AI scores and conversion probabilities for all leads",    type: "AI" },
+  { id: 2, name: "Monthly Conversion Summary",  desc: "Lead conversion rates, revenue, and branch performance",           type: "Monthly" },
+  { id: 3, name: "Customer Portfolio Report",   desc: "Full customer details with CIBIL, income, and loan recommendations", type: "Portfolio" },
+  { id: 4, name: "AI vs CIBIL Comparison",      desc: "Detailed comparison of AI screening vs traditional CIBIL methods",  type: "Analysis" },
+  { id: 5, name: "Branch Performance Report",   desc: "All branch metrics including leads, conversions, and revenue",      type: "Branch" },
+  { id: 6, name: "High Priority Leads Export",  desc: "High-priority leads with full AI analysis",                        type: "Leads" },
+  { id: 7, name: "Audit Trail Report",          desc: "Complete user activity log for compliance and review",              type: "Audit" },
+  { id: 8, name: "Quarterly Business Review",   desc: "Quarterly lending performance with AI insights and forecasts",      type: "Quarterly" },
 ];
 
 const TYPE_COLORS = {
-  AI: ["#eff6ff", "#1e40af"], Monthly: ["#dcfce7", "#15803d"], Portfolio: ["#f5f3ff", "#6d28d9"],
-  Analysis: ["#fef3c7", "#b45309"], Branch: ["#ecfeff", "#0891b2"], Leads: ["#fee2e2", "#b91c1c"],
-  Audit: ["#f3f4f6", "#374151"], Quarterly: ["#fff7ed", "#9a3412"],
+  AI:        ["#eff6ff", "#1e40af"],
+  Monthly:   ["#dcfce7", "#15803d"],
+  Portfolio: ["#f5f3ff", "#6d28d9"],
+  Analysis:  ["#fef3c7", "#b45309"],
+  Branch:    ["#ecfeff", "#0891b2"],
+  Leads:     ["#fee2e2", "#b91c1c"],
+  Audit:     ["#f3f4f6", "#374151"],
+  Quarterly: ["#fff7ed", "#9a3412"],
 };
 
+// Build a flat array of rows from customers for a given report type
+function buildRows(report, customers, analytics) {
+  switch (report.type) {
+    case "Leads":
+      return customers
+        .filter(c => c.priority === "High")
+        .map(c => ({
+          Name: c.name, Occupation: c.occupation, "AI Score": c.aiScore,
+          Priority: c.priority, "Conversion %": c.conversion,
+          Income: c.income, CIBIL: c.cibil, "Recommended Loan": c.loan,
+          Status: c.status, "Top Signal": c.signal,
+        }));
+    case "AI":
+      return customers.map(c => ({
+        Name: c.name, "AI Score": c.aiScore, "Conversion %": c.conversion,
+        Priority: c.priority, "Recommended Loan": c.loan,
+        "Top Signal": c.signal, Status: c.status,
+      }));
+    case "Analysis":
+      return customers.map(c => ({
+        Name: c.name, "AI Score": c.aiScore, CIBIL: c.cibil,
+        "AI Priority": c.priority, "Conversion %": c.conversion,
+        "CIBIL Band": c.cibil >= 750 ? "Excellent" : c.cibil >= 650 ? "Good" : "Poor",
+      }));
+    default:
+      return customers.map(c => ({
+        Name: c.name, Occupation: c.occupation, Income: c.income,
+        CIBIL: c.cibil, "AI Score": c.aiScore, "Conversion %": c.conversion,
+        Priority: c.priority, "Recommended Loan": c.loan,
+        Status: c.status, "Last Contact": c.lastContact,
+      }));
+  }
+}
+
+function downloadExcel(report, customers, analytics) {
+  const rows = buildRows(report, customers, analytics);
+  if (!rows.length) return;
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, report.type);
+  XLSX.writeFile(wb, `IDBI_${report.name.replace(/\s+/g, "_")}.xlsx`);
+}
+
+function downloadPDF(report, customers, analytics) {
+  const rows = buildRows(report, customers, analytics);
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const tableRows = rows.slice(0, 100).map(r =>
+    `<tr>${headers.map(h => `<td>${r[h] ?? ""}</td>`).join("")}</tr>`
+  ).join("");
+
+  const html = `<!DOCTYPE html><html><head>
+    <title>${report.name}</title>
+    <style>
+      body { font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 11px; color: #12181F; padding: 24px; }
+      h1 { font-size: 16px; color: #0E1A2B; margin-bottom: 4px; }
+      p { font-size: 11px; color: #5C6672; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #0E1A2B; color: #E8ECF2; padding: 7px 10px; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
+      td { padding: 6px 10px; border-bottom: 1px solid #E4DFD1; }
+      tr:nth-child(even) td { background: #F5F3ED; }
+      @media print { body { padding: 0; } }
+    </style>
+  </head><body>
+    <h1>IDBI Bank — ${report.name}</h1>
+    <p>${report.desc} · Generated ${new Date().toLocaleDateString("en-IN")}</p>
+    <table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${tableRows}</tbody></table>
+  </body></html>`;
+
+  const win = window.open("", "_blank");
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 400);
+}
+
 export default function ReportsPage() {
-  const { darkMode, addToast, exportCSV } = useApp();
+  const { darkMode, addToast, customers, analytics } = useApp();
   const [generating, setGenerating] = useState(null);
   const [search, setSearch] = useState("");
 
-  const bg = darkMode ? "#0f172a" : "#f5f7fb";
-  const cardBg = darkMode ? "#1e293b" : "#fff";
-  const border = darkMode ? "#334155" : "#e5e7eb";
-  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
-  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+  const bg          = darkMode ? DS.navy  : DS.bg;
+  const cardBg      = darkMode ? "#1e293b" : DS.card;
+  const border      = darkMode ? "#334155" : DS.border;
+  const textPrimary = darkMode ? "#f1f5f9" : DS.ink;
+  const textSecondary = darkMode ? "#94a3b8" : DS.ink2;
 
   const filtered = REPORTS.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     r.type.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleGenerate = async (type) => {
-    setGenerating(type);
-    await new Promise(r => setTimeout(r, 1400));
-    setGenerating(null);
-    addToast(`${type} report generated successfully`, "success");
+  const handleDownload = async (report, format) => {
+    const key = `${report.id}-${format}`;
+    setGenerating(key);
+    try {
+      if (format === "Excel") {
+        downloadExcel(report, customers, analytics);
+        addToast(`${report.name} downloaded as Excel`, "success");
+      } else if (format === "PDF") {
+        downloadPDF(report, customers, analytics);
+        addToast(`${report.name} opened for printing/PDF`, "success");
+      }
+    } catch {
+      addToast("Export failed", "error");
+    } finally {
+      setTimeout(() => setGenerating(null), 800);
+    }
   };
 
-  const handleDownload = (report, format) => {
-    addToast(`Downloading ${report.name} as ${format}...`, "info");
+  const handleQuickGenerate = async (label) => {
+    setGenerating(label);
+    await new Promise(r => setTimeout(r, 1500));
+    try {
+      if (label === "PDF Report") {
+        downloadPDF(REPORTS[0], customers, analytics);
+        addToast("PDF report opened for printing", "success");
+      } else {
+        const matchedReport = REPORTS.find(r => r.name.toLowerCase().includes(label.toLowerCase().split(" ")[0])) || REPORTS[0];
+        downloadExcel(matchedReport, customers, analytics);
+        addToast(`${label} downloaded as Excel`, "success");
+      }
+    } catch {
+      addToast("Generation failed", "error");
+    } finally {
+      setGenerating(null);
+    }
   };
 
   return (
-    <div style={{ background: bg, minHeight: "100%", padding: "20px 24px 40px" }}>
+    <div style={{ background: bg, minHeight: "100%", padding: "20px 24px 40px", fontFamily: "'IBM Plex Sans', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h2 style={{ fontSize: "20px", fontWeight: "800", color: textPrimary, margin: 0 }}>Reports</h2>
+          <h2 style={{ fontSize: "20px", fontWeight: "700", color: textPrimary, margin: 0 }}>Reports</h2>
           <p style={{ fontSize: "13px", color: textSecondary, margin: "4px 0 0" }}>Generate and download banking intelligence reports</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          {["CSV", "Excel", "PDF"].map(fmt => (
-            <button key={fmt} onClick={() => {
-              if (fmt === "CSV") { exportCSV().then(() => addToast("CSV export downloaded", "success")).catch(() => addToast("Export failed", "error")); }
-              else { addToast(`Exporting all reports as ${fmt}...`, "info"); }
-            }}
-              style={{
-                padding: "8px 16px", borderRadius: "8px", border: "1.5px solid #1e40af",
-                background: "transparent", color: "#1e40af", fontSize: "12px", fontWeight: "600", cursor: "pointer",
-              }}>📤 {fmt}</button>
+          {[
+            { fmt: "Excel", action: () => { downloadExcel(REPORTS[2], customers, analytics); addToast("Excel downloaded", "success"); } },
+            { fmt: "PDF",   action: () => { downloadPDF(REPORTS[2], customers, analytics); addToast("PDF opened for printing", "success"); } },
+          ].map(({ fmt, action }) => (
+            <button key={fmt} onClick={action}
+              style={{ padding: "8px 16px", borderRadius: "6px", border: `1.5px solid ${DS.gold}`, background: "transparent", color: DS.gold, fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+              📤 {fmt}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Generate New */}
-      <div style={{ background: cardBg, borderRadius: "12px", border: `1px solid ${border}`, padding: "18px", marginBottom: "16px" }}>
-        <div style={{ fontSize: "14px", fontWeight: "700", color: textPrimary, marginBottom: "14px" }}>⚡ Generate New Report</div>
+      {/* Quick Generate */}
+      <div style={{ background: cardBg, borderRadius: "8px", border: `1px solid ${border}`, padding: "18px", marginBottom: "16px" }}>
+        <div style={{ fontSize: "13px", fontWeight: "700", color: textPrimary, marginBottom: "14px" }}>⚡ Generate New Report</div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {[
             { label: "AI Lead Report", icon: "🤖", color: "#1e40af" },
-            { label: "Conversion Report", icon: "📈", color: "#22c55e" },
-            { label: "Customer Export", icon: "👥", color: "#7c3aed" },
+            { label: "Portfolio Report", icon: "👥", color: "#7c3aed" },
             { label: "Branch Report", icon: "🏦", color: "#0891b2" },
-            { label: "Audit Report", icon: "🔍", color: "#b45309" },
+            { label: "PDF Report", icon: "📄", color: "#b45309" },
           ].map(({ label, icon, color }) => (
             <GenerateBtn key={label} label={label} icon={icon} color={color}
               loading={generating === label}
-              onClick={() => handleGenerate(label)} />
+              onClick={() => handleQuickGenerate(label)} />
           ))}
         </div>
       </div>
@@ -88,8 +203,8 @@ export default function ReportsPage() {
       <div style={{ position: "relative", marginBottom: "16px" }}>
         <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "13px" }}>🔍</span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reports..."
-          style={{ width: "100%", padding: "10px 12px 10px 34px", border: `1.5px solid ${border}`, borderRadius: "8px", fontSize: "13px", outline: "none", background: cardBg, color: textPrimary }}
-          onFocus={e => e.target.style.borderColor = "#1e40af"}
+          style={{ width: "100%", padding: "10px 12px 10px 34px", border: `1.5px solid ${border}`, borderRadius: "6px", fontSize: "13px", outline: "none", background: cardBg, color: textPrimary, fontFamily: "'IBM Plex Sans', sans-serif" }}
+          onFocus={e => e.target.style.borderColor = DS.gold}
           onBlur={e => e.target.style.borderColor = border}
         />
       </div>
@@ -100,7 +215,9 @@ export default function ReportsPage() {
           const [tbg, tc] = TYPE_COLORS[report.type] || ["#f3f4f6", "#374151"];
           return (
             <ReportRow key={report.id} report={report} tbg={tbg} tc={tc}
-              onDownload={handleDownload} darkMode={darkMode} cardBg={cardBg} border={border}
+              generating={generating}
+              onDownload={handleDownload}
+              darkMode={darkMode} cardBg={cardBg} border={border}
               textPrimary={textPrimary} textSecondary={textSecondary} />
           );
         })}
@@ -109,56 +226,68 @@ export default function ReportsPage() {
   );
 }
 
-function ReportRow({ report, tbg, tc, onDownload, darkMode, cardBg, border, textPrimary, textSecondary }) {
+function ReportRow({ report, tbg, tc, generating, onDownload, darkMode, cardBg, border, textPrimary, textSecondary }) {
   const [h, setH] = useState(false);
   return (
     <div onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
-        background: cardBg, borderRadius: "10px", border: `1px solid ${border}`,
+        background: cardBg, borderRadius: "8px", border: `1px solid ${h ? DS.gold : border}`,
         padding: "14px 16px", display: "flex", alignItems: "center", gap: "14px",
-        boxShadow: h ? "0 6px 16px rgba(0,0,0,0.08)" : "none",
-        transition: "box-shadow 0.2s", flexWrap: "wrap",
+        transition: "border-color 0.15s", flexWrap: "wrap",
       }}>
-      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: tbg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: tc, flexShrink: 0 }}>{report.type}</div>
+      <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: tbg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: tc, flexShrink: 0 }}>{report.type}</div>
       <div style={{ flex: 1, minWidth: "200px" }}>
-        <div style={{ fontSize: "14px", fontWeight: "600", color: textPrimary }}>{report.name}</div>
+        <div style={{ fontSize: "13px", fontWeight: "600", color: textPrimary }}>{report.name}</div>
         <div style={{ fontSize: "12px", color: textSecondary, marginTop: "2px" }}>{report.desc}</div>
-        <div style={{ fontSize: "11px", color: textSecondary, marginTop: "4px" }}>{report.date} · {report.size}</div>
       </div>
-      <span style={{ background: "#dcfce7", color: "#15803d", fontSize: "11px", fontWeight: "600", padding: "3px 10px", borderRadius: "20px" }}>{report.status}</span>
       <div style={{ display: "flex", gap: "6px" }}>
-        {["CSV", "Excel", "PDF"].map(fmt => (
-          <DownloadBtn key={fmt} label={fmt} onClick={() => onDownload(report, fmt)} />
-        ))}
+        {["Excel", "PDF"].map(fmt => {
+          const key = `${report.id}-${fmt}`;
+          return (
+            <DownloadBtn key={fmt} label={fmt} loading={generating === key}
+              onClick={() => onDownload(report, fmt)} />
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function DownloadBtn({ label, onClick }) {
+function DownloadBtn({ label, onClick, loading }) {
   const [h, setH] = useState(false);
   return (
-    <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <button onClick={onClick} disabled={loading}
+      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
-        padding: "5px 10px", borderRadius: "6px", border: "1.5px solid #e5e7eb",
-        background: h ? "#1e40af" : "#fff", color: h ? "#fff" : "#374151",
-        fontSize: "11px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s",
-      }}>↓ {label}</button>
+        padding: "5px 10px", borderRadius: "5px",
+        border: `1.5px solid ${DS.border}`,
+        background: loading ? DS.goldSoft : h ? DS.navy : DS.card,
+        color: loading ? DS.gold : h ? "#fff" : DS.ink2,
+        fontSize: "11px", fontWeight: "600",
+        cursor: loading ? "not-allowed" : "pointer",
+        transition: "all 0.15s", whiteSpace: "nowrap",
+        fontFamily: "'IBM Plex Sans', sans-serif",
+      }}>
+      {loading ? "⏳" : "↓"} {label}
+    </button>
   );
 }
 
 function GenerateBtn({ label, icon, color, loading, onClick }) {
   const [h, setH] = useState(false);
   return (
-    <button onClick={onClick} disabled={loading} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <button onClick={onClick} disabled={loading}
+      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
         display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px",
-        borderRadius: "8px", border: `1.5px solid ${color}20`,
-        background: h ? color : `${color}15`, color: h ? "#fff" : color,
-        fontSize: "12px", fontWeight: "600", cursor: loading ? "not-allowed" : "pointer",
-        transition: "all 0.2s",
+        borderRadius: "6px", border: `1.5px solid ${color}30`,
+        background: h ? color : `${color}15`,
+        color: h ? "#fff" : color,
+        fontSize: "12px", fontWeight: "600",
+        cursor: loading ? "not-allowed" : "pointer",
+        transition: "all 0.18s", fontFamily: "'IBM Plex Sans', sans-serif",
       }}>
-      {loading ? <span style={{ fontSize: "12px" }}>⏳</span> : <span>{icon}</span>}
+      {loading ? <span>⏳</span> : <span>{icon}</span>}
       {loading ? "Generating..." : label}
     </button>
   );

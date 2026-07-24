@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { BRAND } from "../App";
 
 const RM_MENU = [
   { id: "dashboard",    icon: "LayoutDashboard", label: "Dashboard" },
@@ -84,7 +85,7 @@ export default function Sidebar({ activePage, onNavigate }) {
       }}>
         {!sidebarCollapsed && (
           <div>
-            <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "20px", fontWeight: "700", color: "#C79A3D", letterSpacing: "-0.5px", lineHeight: 1 }}>IDBI</div>
+            <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "20px", fontWeight: "700", color: "#C79A3D", letterSpacing: "-0.5px", lineHeight: 1 }}>{BRAND}</div>
             <div style={{ fontSize: "9px", fontWeight: "500", color: "#8CA0BC", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: "2px" }}>Lending Intelligence</div>
           </div>
         )}

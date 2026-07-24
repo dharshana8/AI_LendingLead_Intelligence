@@ -1,6 +1,7 @@
 SAMPLE_CUSTOMERS = [
     {
-        "name": "Priya Sharma", "age": 32, "occupation": "Software Engineer",
+        "name": "Kavitha Annamalai", "age": 32, "occupation": "Software Engineer",
+        "branch": "Chennai South",
         "cibil_score": 780,
         "monthly_credit_1": 95000, "monthly_credit_2": 95000, "monthly_credit_3": 95000,
         "monthly_credit_4": 95000, "monthly_credit_5": 95000, "monthly_credit_6": 95000,
@@ -8,7 +9,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 8, "existing_loan_count": 1, "years_of_experience": 8, "account_balance": 250000,
     },
     {
-        "name": "Rajesh Kumar", "age": 45, "occupation": "Business Owner",
+        "name": "Selvakumar Rajan", "age": 45, "occupation": "Business Owner",
+        "branch": "Coimbatore Central",
         "cibil_score": 710,
         "monthly_credit_1": 150000, "monthly_credit_2": 130000, "monthly_credit_3": 160000,
         "monthly_credit_4": 140000, "monthly_credit_5": 155000, "monthly_credit_6": 145000,
@@ -16,7 +18,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 12, "existing_loan_count": 2, "years_of_experience": 15, "account_balance": 500000,
     },
     {
-        "name": "Meena Iyer", "age": 29, "occupation": "Doctor",
+        "name": "Padmavathi Subramaniam", "age": 29, "occupation": "Doctor",
+        "branch": "Madurai Central",
         "cibil_score": 820,
         "monthly_credit_1": 120000, "monthly_credit_2": 120000, "monthly_credit_3": 120000,
         "monthly_credit_4": 120000, "monthly_credit_5": 120000, "monthly_credit_6": 120000,
@@ -24,7 +27,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 5, "existing_loan_count": 0, "years_of_experience": 4, "account_balance": 800000,
     },
     {
-        "name": "Karthik Rajan", "age": 38, "occupation": "Government Employee",
+        "name": "Murugesan Natarajan", "age": 38, "occupation": "Government Employee",
+        "branch": "Trichy Main",
         "cibil_score": 690,
         "monthly_credit_1": 55000, "monthly_credit_2": 55000, "monthly_credit_3": 55000,
         "monthly_credit_4": 55000, "monthly_credit_5": 55000, "monthly_credit_6": 55000,
@@ -32,7 +36,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 3, "existing_loan_count": 1, "years_of_experience": 12, "account_balance": 120000,
     },
     {
-        "name": "Sunita Patel", "age": 41, "occupation": "Teacher",
+        "name": "Thenmozhi Krishnaswamy", "age": 41, "occupation": "Teacher",
+        "branch": "Salem North",
         "cibil_score": 650,
         "monthly_credit_1": 42000, "monthly_credit_2": 42000, "monthly_credit_3": 42000,
         "monthly_credit_4": 42000, "monthly_credit_5": 42000, "monthly_credit_6": 42000,
@@ -40,7 +45,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 6, "existing_loan_count": 0, "years_of_experience": 14, "account_balance": 95000,
     },
     {
-        "name": "Amit Verma", "age": 35, "occupation": "Sales Manager",
+        "name": "Arunachalam Venkataraman", "age": 35, "occupation": "Sales Manager",
+        "branch": "Chennai South",
         "cibil_score": 720,
         "monthly_credit_1": 70000, "monthly_credit_2": 85000, "monthly_credit_3": 60000,
         "monthly_credit_4": 90000, "monthly_credit_5": 75000, "monthly_credit_6": 80000,
@@ -48,7 +54,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 9, "existing_loan_count": 2, "years_of_experience": 10, "account_balance": 180000,
     },
     {
-        "name": "Deepa Nair", "age": 27, "occupation": "Data Analyst",
+        "name": "Saranya Palaniappan", "age": 27, "occupation": "Data Analyst",
+        "branch": "Coimbatore Central",
         "cibil_score": 760,
         "monthly_credit_1": 65000, "monthly_credit_2": 65000, "monthly_credit_3": 65000,
         "monthly_credit_4": 65000, "monthly_credit_5": 65000, "monthly_credit_6": 65000,
@@ -56,7 +63,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 7, "existing_loan_count": 0, "years_of_experience": 4, "account_balance": 210000,
     },
     {
-        "name": "Vikram Singh", "age": 50, "occupation": "Retired Army Officer",
+        "name": "Ramasamy Govindasamy", "age": 50, "occupation": "Retired Government Officer",
+        "branch": "Madurai Central",
         "cibil_score": 800,
         "monthly_credit_1": 80000, "monthly_credit_2": 80000, "monthly_credit_3": 80000,
         "monthly_credit_4": 80000, "monthly_credit_5": 80000, "monthly_credit_6": 80000,
@@ -64,7 +72,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 4, "existing_loan_count": 0, "years_of_experience": 28, "account_balance": 1200000,
     },
     {
-        "name": "Ananya Bose", "age": 31, "occupation": "Chartered Accountant",
+        "name": "Vijayalakshmi Chandrasekaran", "age": 31, "occupation": "Chartered Accountant",
+        "branch": "Chennai South",
         "cibil_score": 790,
         "monthly_credit_1": 110000, "monthly_credit_2": 110000, "monthly_credit_3": 110000,
         "monthly_credit_4": 110000, "monthly_credit_5": 110000, "monthly_credit_6": 110000,
@@ -72,7 +81,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 10, "existing_loan_count": 1, "years_of_experience": 7, "account_balance": 430000,
     },
     {
-        "name": "Suresh Menon", "age": 44, "occupation": "Architect",
+        "name": "Ilayaraja Soundararajan", "age": 44, "occupation": "Architect",
+        "branch": "Trichy Main",
         "cibil_score": 670,
         "monthly_credit_1": 90000, "monthly_credit_2": 70000, "monthly_credit_3": 95000,
         "monthly_credit_4": 60000, "monthly_credit_5": 85000, "monthly_credit_6": 75000,
@@ -80,7 +90,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 2, "existing_loan_count": 3, "years_of_experience": 18, "account_balance": 75000,
     },
     {
-        "name": "Kavitha Reddy", "age": 36, "occupation": "Nurse",
+        "name": "Nirmala Devi Shanmugam", "age": 36, "occupation": "Nurse",
+        "branch": "Salem North",
         "cibil_score": 640,
         "monthly_credit_1": 38000, "monthly_credit_2": 38000, "monthly_credit_3": 38000,
         "monthly_credit_4": 38000, "monthly_credit_5": 38000, "monthly_credit_6": 38000,
@@ -88,7 +99,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 5, "existing_loan_count": 1, "years_of_experience": 10, "account_balance": 55000,
     },
     {
-        "name": "Nikhil Joshi", "age": 28, "occupation": "Startup Founder",
+        "name": "Kumaresan Thirumalai", "age": 28, "occupation": "Startup Founder",
+        "branch": "Coimbatore Central",
         "cibil_score": 580,
         "monthly_credit_1": 50000, "monthly_credit_2": 20000, "monthly_credit_3": 80000,
         "monthly_credit_4": 30000, "monthly_credit_5": 60000, "monthly_credit_6": 40000,
@@ -96,7 +108,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 15, "existing_loan_count": 1, "years_of_experience": 3, "account_balance": 40000,
     },
     {
-        "name": "Rekha Gupta", "age": 48, "occupation": "Homemaker",
+        "name": "Ambigai Periyasamy", "age": 48, "occupation": "Homemaker",
+        "branch": "Madurai Central",
         "cibil_score": 610,
         "monthly_credit_1": 25000, "monthly_credit_2": 25000, "monthly_credit_3": 25000,
         "monthly_credit_4": 25000, "monthly_credit_5": 25000, "monthly_credit_6": 25000,
@@ -104,7 +117,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 1, "existing_loan_count": 0, "years_of_experience": 0, "account_balance": 30000,
     },
     {
-        "name": "Arjun Pillai", "age": 33, "occupation": "Bank Manager",
+        "name": "Sureshkumar Balakrishnan", "age": 33, "occupation": "Bank Manager",
+        "branch": "Chennai South",
         "cibil_score": 810,
         "monthly_credit_1": 100000, "monthly_credit_2": 100000, "monthly_credit_3": 100000,
         "monthly_credit_4": 100000, "monthly_credit_5": 100000, "monthly_credit_6": 100000,
@@ -112,7 +126,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 11, "existing_loan_count": 1, "years_of_experience": 9, "account_balance": 620000,
     },
     {
-        "name": "Pooja Desai", "age": 26, "occupation": "Marketing Executive",
+        "name": "Ezhilarasi Muthukrishnan", "age": 26, "occupation": "Marketing Executive",
+        "branch": "Trichy Main",
         "cibil_score": 700,
         "monthly_credit_1": 48000, "monthly_credit_2": 48000, "monthly_credit_3": 48000,
         "monthly_credit_4": 48000, "monthly_credit_5": 48000, "monthly_credit_6": 48000,
@@ -120,7 +135,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 8, "existing_loan_count": 0, "years_of_experience": 3, "account_balance": 85000,
     },
     {
-        "name": "Ramesh Yadav", "age": 52, "occupation": "Farmer",
+        "name": "Ponnusamy Karuppaiah", "age": 52, "occupation": "Farmer",
+        "branch": "Salem North",
         "cibil_score": 520,
         "monthly_credit_1": 30000, "monthly_credit_2": 15000, "monthly_credit_3": 45000,
         "monthly_credit_4": 20000, "monthly_credit_5": 35000, "monthly_credit_6": 0,
@@ -128,7 +144,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 2, "existing_loan_count": 2, "years_of_experience": 25, "account_balance": 18000,
     },
     {
-        "name": "Sneha Kulkarni", "age": 30, "occupation": "Pharmacist",
+        "name": "Komalavalli Rajendran", "age": 30, "occupation": "Pharmacist",
+        "branch": "Coimbatore Central",
         "cibil_score": 750,
         "monthly_credit_1": 72000, "monthly_credit_2": 72000, "monthly_credit_3": 72000,
         "monthly_credit_4": 72000, "monthly_credit_5": 72000, "monthly_credit_6": 72000,
@@ -136,7 +153,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 6, "existing_loan_count": 0, "years_of_experience": 5, "account_balance": 190000,
     },
     {
-        "name": "Harish Chandra", "age": 43, "occupation": "Civil Engineer",
+        "name": "Tamilarasan Veerasamy", "age": 43, "occupation": "Civil Engineer",
+        "branch": "Madurai Central",
         "cibil_score": 730,
         "monthly_credit_1": 88000, "monthly_credit_2": 88000, "monthly_credit_3": 88000,
         "monthly_credit_4": 88000, "monthly_credit_5": 88000, "monthly_credit_6": 88000,
@@ -144,7 +162,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 7, "existing_loan_count": 2, "years_of_experience": 17, "account_balance": 310000,
     },
     {
-        "name": "Lalitha Krishnan", "age": 39, "occupation": "HR Manager",
+        "name": "Mangaiyarkarasi Sundaresan", "age": 39, "occupation": "HR Manager",
+        "branch": "Chennai South",
         "cibil_score": 680,
         "monthly_credit_1": 62000, "monthly_credit_2": 62000, "monthly_credit_3": 62000,
         "monthly_credit_4": 62000, "monthly_credit_5": 62000, "monthly_credit_6": 62000,
@@ -152,7 +171,8 @@ SAMPLE_CUSTOMERS = [
         "loan_page_visits": 4, "existing_loan_count": 1, "years_of_experience": 13, "account_balance": 140000,
     },
     {
-        "name": "Mohit Agarwal", "age": 37, "occupation": "Investment Banker",
+        "name": "Anbarasan Palanisamy", "age": 37, "occupation": "Investment Banker",
+        "branch": "Chennai South",
         "cibil_score": 850,
         "monthly_credit_1": 200000, "monthly_credit_2": 200000, "monthly_credit_3": 200000,
         "monthly_credit_4": 200000, "monthly_credit_5": 200000, "monthly_credit_6": 200000,

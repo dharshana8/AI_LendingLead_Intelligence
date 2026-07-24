@@ -1,46 +1,36 @@
 import React from "react";
 import { useApp } from "../context/AppContext";
 
-function SkeletonInsight() {
-  return (
-    <div style={{ flex: "1 1 280px", display: "flex", gap: "8px", alignItems: "flex-start" }}>
-      <div style={{ width: "14px", height: "14px", borderRadius: "50%", background: "#bfdbfe", flexShrink: 0, marginTop: "2px" }} />
-      <div style={{ flex: 1 }}>
-        <div style={{ height: "12px", background: "#bfdbfe", borderRadius: "6px", marginBottom: "4px", animation: "shimmer 1.5s infinite" }} />
-        <div style={{ height: "12px", background: "#bfdbfe", borderRadius: "6px", width: "70%", animation: "shimmer 1.5s infinite" }} />
-      </div>
-    </div>
-  );
-}
-
 export default function InsightsCard() {
-  const { analytics, dataLoading } = useApp();
-
+  const { analytics, dataLoading, darkMode } = useApp();
   const insights = analytics?.insights || [];
+  const bg = darkMode ? "#0E1A2B" : "#0E1A2B";
 
   return (
     <div style={{
-      margin: "20px 28px 0", background: "#eff6ff",
-      borderRadius: "14px", padding: "20px 24px",
-      borderLeft: "5px solid #1e40af", border: "1px solid #bfdbfe",
-      borderLeftWidth: "5px",
+      margin: "16px 24px 0",
+      background: bg,
+      borderRadius: "6px",
+      padding: "18px 22px",
+      borderLeft: "3px solid #C79A3D",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
-        <span style={{ fontSize: "20px" }}>🧠</span>
-        <span style={{ fontSize: "15px", fontWeight: "700", color: "#1e40af" }}>Today's AI Insights</span>
-        <span style={{ marginLeft: "auto", background: "#1e40af", color: "#fff", fontSize: "10px", fontWeight: "600", padding: "3px 10px", borderRadius: "20px" }}>LIVE</span>
+        <span style={{ fontSize: "13px", fontWeight: "700", color: "#C79A3D", fontFamily: "'IBM Plex Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Insights</span>
+        <span style={{ marginLeft: "auto", background: "rgba(199,154,61,0.15)", color: "#C79A3D", fontSize: "9px", fontWeight: "700", padding: "2px 8px", borderRadius: "2px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>LIVE</span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         {dataLoading
-          ? [1, 2, 3, 4, 5].map(i => <SkeletonInsight key={i} />)
+          ? [1,2,3].map(i => (
+              <div key={i} style={{ flex: "1 1 260px", height: "14px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", animation: "shimmer 1.5s infinite" }} />
+            ))
           : insights.length > 0
             ? insights.map((text, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", flex: "1 1 280px" }}>
-                  <span style={{ color: "#22c55e", fontWeight: "700", fontSize: "14px", marginTop: "1px" }}>✔</span>
-                  <span style={{ fontSize: "13px", color: "#1e3a8a", lineHeight: "1.5" }}>{text}</span>
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", flex: "1 1 260px" }}>
+                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#C79A3D", flexShrink: 0, marginTop: "5px" }} />
+                  <span style={{ fontSize: "12px", color: "#8CA0BC", lineHeight: 1.55, fontFamily: "'IBM Plex Sans', sans-serif" }}>{text}</span>
                 </div>
               ))
-            : <span style={{ fontSize: "13px", color: "#1e3a8a" }}>No insights available yet. Load sample data to begin.</span>
+            : <span style={{ fontSize: "12px", color: "#8CA0BC", fontFamily: "'IBM Plex Sans', sans-serif" }}>No insights yet. Load sample data to begin.</span>
         }
       </div>
     </div>

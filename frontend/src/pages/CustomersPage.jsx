@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
 import { PriorityBadge, LoanBadge } from "../components/Badges";
 import DetailPanel from "../components/DetailPanel";
+import LogCallModal from "../components/LogCallModal";
 
 function Avatar({ name, size = 38 }) {
   const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -19,13 +20,15 @@ function Avatar({ name, size = 38 }) {
 const STATUS_OPTIONS = ["All", "New", "Contacted", "Interested", "Applied", "Converted"];
 
 export default function CustomersPage() {
-  const { darkMode, addToast, customers, exportCSV, importCSV, refetch, createCustomer } = useApp();
+  const { darkMode, addToast, customers, exportCSV, refetch, createCustomer, user } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+  const [logCallLead, setLogCallLead] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState("table");
@@ -85,13 +88,30 @@ export default function CustomersPage() {
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {selectedRows.length > 0 && (
             <>
-              <ActionBtn label={`Assign (${selectedRows.length})`} color="#7c3aed" onClick={() => { addToast(`${selectedRows.length} customers assigned`, "success"); setSelectedRows([]); }} />
-              <ActionBtn label="Export Selected" color="#059669" onClick={() => { addToast("Exporting selected customers...", "info"); setSelectedRows([]); }} />
-              <ActionBtn label="Delete" color="#ef4444" onClick={() => { addToast("Customers removed from view", "warning"); setSelectedRows([]); }} />
+              <ActionBtn label={`Export Selected (${selectedRows.length})`} color="#059669" onClick={async () => {
+                try {
+                  const rows = customers.filter(c => selectedRows.includes(c.id));
+                  const XLSX = await import("xlsx");
+                  const ws = XLSX.utils.json_to_sheet(rows.map(c => ({ Name: c.name, Occupation: c.occupation, Income: c.income, CIBIL: c.cibil, "AI Score": c.aiScore, Priority: c.priority, Loan: c.loan, Status: c.status })));
+                  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Selected");
+                  XLSX.writeFile(wb, `Selected_${selectedRows.length}.xlsx`);
+                  addToast(`${selectedRows.length} customers exported`, "success");
+                } catch { addToast("Export failed", "error"); }
+                setSelectedRows([]);
+              }} />
+              <ActionBtn label={`Delete (${selectedRows.length})`} color="#ef4444" onClick={async () => {
+                if (!window.confirm(`Delete ${selectedRows.length} customer(s)? This cannot be undone.`)) return;
+                const { apiDeleteCustomer } = await import("../services/api");
+                let failed = 0;
+                for (const id of selectedRows) { try { await apiDeleteCustomer(id); } catch { failed++; } }
+                addToast(failed === 0 ? `${selectedRows.length} customers deleted` : `${selectedRows.length - failed} deleted, ${failed} failed`, failed === 0 ? "success" : "error");
+                setSelectedRows([]); refetch();
+              }} />
             </>
           )}
           <ActionBtn label="+ Add Customer" color="#1e40af" onClick={() => setShowAddModal(true)} primary />
           <ActionBtn label="📥 Import" color="#059669" onClick={() => setShowImportModal(true)} />
+          <ActionBtn label="🗑 Clear All" color="#B5482F" onClick={() => setShowClearConfirm(true)} />
           <ActionBtn label="📤 Export CSV" color="#374151" onClick={() => exportCSV().then(() => addToast("Export downloaded", "success")).catch(() => addToast("Export failed", "error"))} />
         </div>
       </div>
@@ -156,6 +176,7 @@ export default function CustomersPage() {
                 {paginated.map(lead => (
                   <CustomerRow key={lead.id} lead={lead} selected={selectedRows.includes(lead.id)}
                     onToggle={() => toggleRow(lead.id)} onView={() => setSelected(lead)}
+                    onLogCall={() => setLogCallLead(lead)}
                     td={td} textPrimary={textPrimary} textSecondary={textSecondary}
                     rowHoverBg={rowHoverBg} darkMode={darkMode} addToast={addToast} />
                 ))}
@@ -172,19 +193,49 @@ export default function CustomersPage() {
         </div>
       )}
 
-      <DetailPanel lead={selected} onClose={() => setSelected(null)} onRefresh={refetch} />
+      <DetailPanel lead={selected} onClose={() => setSelected(null)} onRefresh={refetch} onOptimisticRemove={(id) => { /* customers list re-fetches on close */ refetch(); }} />
+      {logCallLead && (
+        <LogCallModal
+          lead={logCallLead}
+          onClose={() => setLogCallLead(null)}
+          onSaved={() => { setLogCallLead(null); refetch(); }}
+        />
+      )}
       {showImportModal && (
         <ImportModal
           darkMode={darkMode}
           onClose={() => setShowImportModal(false)}
-          onImport={async (file) => {
+          onImport={async (file, mode) => {
             try {
-              const result = await importCSV(file);
+              if (mode === "replace") {
+                const { apiDeleteAllCustomers } = await import("../services/api");
+                await apiDeleteAllCustomers();
+              }
+              const { apiImportCSV } = await import("../services/api");
+              const result = await apiImportCSV(file);
               addToast(`Imported ${result.imported} customers${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`, "success");
               setShowImportModal(false);
+              refetch();
             } catch (e) {
-              addToast(e?.response?.data?.detail || "Import failed", "error");
+              addToast(e?.detail || e?.response?.data?.detail || "Import failed", "error");
             }
+          }}
+          existingCount={customers.length}
+        />
+      )}
+      {showClearConfirm && (
+        <ClearAllModal
+          count={customers.length}
+          darkMode={darkMode}
+          onClose={() => setShowClearConfirm(false)}
+          onConfirm={async () => {
+            try {
+              const { apiDeleteAllCustomers } = await import("../services/api");
+              await apiDeleteAllCustomers();
+              await refetch();
+              addToast("All customer data cleared", "success");
+            } catch { addToast("Clear failed", "error"); }
+            setShowClearConfirm(false);
           }}
         />
       )}
@@ -194,7 +245,11 @@ export default function CustomersPage() {
           onClose={() => setShowAddModal(false)}
           onSubmit={async (payload) => {
             try {
-              await createCustomer(payload);
+              await createCustomer({
+                ...payload,
+                assigned_to: user?.employeeId || "",
+                branch: user?.branch || "",
+              });
               addToast("Customer added successfully!", "success");
               setShowAddModal(false);
             } catch (e) {
@@ -207,7 +262,7 @@ export default function CustomersPage() {
   );
 }
 
-function CustomerRow({ lead, selected, onToggle, onView, td, textPrimary, textSecondary, rowHoverBg, darkMode, addToast }) {
+function CustomerRow({ lead, selected, onToggle, onView, onLogCall, td, textPrimary, textSecondary, rowHoverBg, darkMode, addToast }) {
   const [h, setH] = useState(false);
   const statusColors = { New: ["#eff6ff", "#1e40af"], Contacted: ["#fef3c7", "#b45309"], Interested: ["#dcfce7", "#15803d"], Applied: ["#f5f3ff", "#6d28d9"], Converted: ["#dcfce7", "#065f46"] };
   const [sbg, sc] = statusColors[lead.status] || ["#f3f4f6", "#374151"];
@@ -243,7 +298,7 @@ function CustomerRow({ lead, selected, onToggle, onView, td, textPrimary, textSe
       <td style={td}>
         <div style={{ display: "flex", gap: "4px" }}>
           <MiniBtn label="View" onClick={onView} color="#1e40af" />
-          <MiniBtn label="Call" onClick={() => addToast(`Calling ${lead.name}...`, "info")} color="#059669" />
+          <MiniBtn label="Log Call" onClick={onLogCall} color="#059669" />
         </div>
       </td>
     </tr>
@@ -344,10 +399,11 @@ function Pagination({ page, totalPages, total, pageSize, onPage, darkMode, cardB
   );
 }
 
-function ImportModal({ darkMode, onClose, onImport }) {
+function ImportModal({ darkMode, onClose, onImport, existingCount }) {
   const [file, setFile] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState("merge"); // "merge" | "replace"
   const inputRef = React.useRef();
 
   const bg = darkMode ? "#1e293b" : "#fff";
@@ -364,26 +420,45 @@ function ImportModal({ darkMode, onClose, onImport }) {
   const handleSubmit = async () => {
     if (!file) return;
     setLoading(true);
-    await onImport(file);
+    await onImport(file, mode);
     setLoading(false);
   };
 
-  const ACCEPTED = [".csv", ".xlsx", ".xls"];
-  const isValid = file && ACCEPTED.some(ext => file.name.toLowerCase().endsWith(ext));
+  const isReplace = mode === "replace";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-      <div style={{ background: bg, borderRadius: "16px", width: "100%", maxWidth: "480px", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
-        {/* Header */}
+      <div style={{ background: bg, borderRadius: "16px", width: "100%", maxWidth: "500px", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
         <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: textPrimary }}>📥 Import Customers</h3>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: textSecondary }}>Upload CSV or Excel file — AI scores all customers automatically</p>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: textSecondary }}>Upload CSV or Excel — AI scores all customers automatically</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: textSecondary }}>✕</button>
         </div>
 
         <div style={{ padding: "20px 24px" }}>
+          {/* Mode selector */}
+          <div style={{ marginBottom: "18px" }}>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>What to do with existing data?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "12px 14px", border: `2px solid ${mode === "merge" ? "#059669" : border}`, borderRadius: "8px", cursor: "pointer", background: mode === "merge" ? "#f0fdf4" : "transparent" }}>
+                <input type="radio" name="import-mode" value="merge" checked={mode === "merge"} onChange={() => setMode("merge")} style={{ marginTop: "2px", accentColor: "#059669" }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: textPrimary }}>Merge with existing data</div>
+                  <div style={{ fontSize: "12px", color: textSecondary, marginTop: "2px" }}>Keeps all {existingCount} current records. New rows are added alongside them.</div>
+                </div>
+              </label>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "12px 14px", border: `2px solid ${mode === "replace" ? "#B5482F" : border}`, borderRadius: "8px", cursor: "pointer", background: mode === "replace" ? "#fff5f2" : "transparent" }}>
+                <input type="radio" name="import-mode" value="replace" checked={mode === "replace"} onChange={() => setMode("replace")} style={{ marginTop: "2px", accentColor: "#B5482F" }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "#B5482F" }}>Replace all existing data</div>
+                  <div style={{ fontSize: "12px", color: textSecondary, marginTop: "2px" }}>Permanently deletes all {existingCount} current records, then imports the new file. This cannot be undone.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* Drop Zone */}
           <div
             onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -392,13 +467,13 @@ function ImportModal({ darkMode, onClose, onImport }) {
             onClick={() => inputRef.current.click()}
             style={{
               border: `2px dashed ${dragging ? "#1e40af" : file ? "#15803d" : border}`,
-              borderRadius: "12px", padding: "32px 20px", textAlign: "center", cursor: "pointer",
+              borderRadius: "12px", padding: "28px 20px", textAlign: "center", cursor: "pointer",
               background: dragging ? "#eff6ff" : file ? "#f0fdf4" : darkMode ? "#0f172a" : "#f9fafb",
               transition: "all 0.2s",
             }}>
             <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }}
               onChange={e => setFile(e.target.files[0])} />
-            <div style={{ fontSize: "32px", marginBottom: "8px" }}>{file ? "✅" : "📂"}</div>
+            <div style={{ fontSize: "28px", marginBottom: "8px" }}>{file ? "✅" : "📂"}</div>
             {file ? (
               <>
                 <div style={{ fontSize: "14px", fontWeight: "700", color: "#15803d" }}>{file.name}</div>
@@ -412,26 +487,79 @@ function ImportModal({ darkMode, onClose, onImport }) {
             )}
           </div>
 
-          {/* Column guide */}
-          <div style={{ marginTop: "16px", background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "12px 14px", border: `1px solid ${border}` }}>
-            <div style={{ fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", marginBottom: "8px" }}>Required Columns (any order)</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          <div style={{ marginTop: "12px", background: darkMode ? "#0f172a" : "#f9fafb", borderRadius: "10px", padding: "10px 14px", border: `1px solid ${border}` }}>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", marginBottom: "6px" }}>Required Columns</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
               {["name", "age", "occupation", "cibil_score", "monthly_credit_1..6", "credit_limit"].map(col => (
                 <span key={col} style={{ background: "#eff6ff", color: "#1e40af", fontSize: "11px", fontWeight: "600", padding: "2px 8px", borderRadius: "20px" }}>{col}</span>
               ))}
             </div>
-            <div style={{ fontSize: "11px", color: textSecondary, marginTop: "8px" }}>Optional: emi_debits, cc_spend, account_balance, existing_loan_count, years_of_experience, loan_page_visits</div>
           </div>
         </div>
 
         <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <ActionBtn label="Cancel" color="#6b7280" onClick={onClose} />
-          <ActionBtn
-            label={loading ? "Importing..." : "📥 Import"}
-            color="#059669"
+          <button
+            disabled={!file || loading}
             onClick={handleSubmit}
-            primary
+            style={{
+              padding: "8px 18px", borderRadius: "8px", fontSize: "12px", fontWeight: "700",
+              cursor: !file || loading ? "not-allowed" : "pointer",
+              border: "none",
+              background: !file || loading ? "#e5e7eb" : isReplace ? "#B5482F" : "#059669",
+              color: !file || loading ? "#9ca3af" : "#fff",
+              transition: "background 0.2s",
+            }}
+          >
+            {loading ? "Importing..." : isReplace ? `Delete old data & import` : "📥 Merge & Import"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ClearAllModal({ count, darkMode, onClose, onConfirm }) {
+  const [typed, setTyped] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bg = darkMode ? "#1e293b" : "#fff";
+  const border = darkMode ? "#334155" : "#e5e7eb";
+  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
+  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+  const confirmed = typed === "DELETE";
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div style={{ background: bg, borderRadius: "12px", width: "100%", maxWidth: "420px", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", border: `2px solid #B5482F` }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${border}` }}>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#B5482F" }}>🗑 Clear All Customer Data</h3>
+          <p style={{ margin: "6px 0 0", fontSize: "13px", color: textSecondary }}>This will permanently delete all {count} customer records. There is no undo.</p>
+        </div>
+        <div style={{ padding: "20px 24px" }}>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: textSecondary, display: "block", marginBottom: "8px" }}>
+            Type <strong style={{ color: "#B5482F" }}>DELETE</strong> to confirm
+          </label>
+          <input
+            value={typed}
+            onChange={e => setTyped(e.target.value)}
+            placeholder="DELETE"
+            style={{ width: "100%", padding: "9px 12px", border: `2px solid ${confirmed ? "#B5482F" : border}`, borderRadius: "6px", fontSize: "13px", outline: "none", background: darkMode ? "#0f172a" : "#f9fafb", color: textPrimary, boxSizing: "border-box" }}
           />
+        </div>
+        <div style={{ padding: "0 24px 20px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <ActionBtn label="Cancel" color="#6b7280" onClick={onClose} />
+          <button
+            disabled={!confirmed || loading}
+            onClick={async () => { setLoading(true); await onConfirm(); setLoading(false); }}
+            style={{
+              padding: "8px 18px", borderRadius: "8px", fontSize: "12px", fontWeight: "700",
+              cursor: !confirmed || loading ? "not-allowed" : "pointer",
+              border: "none",
+              background: !confirmed || loading ? "#e5e7eb" : "#B5482F",
+              color: !confirmed || loading ? "#9ca3af" : "#fff",
+            }}
+          >
+            {loading ? "Deleting..." : `Delete all ${count} records`}
+          </button>
         </div>
       </div>
     </div>
@@ -439,12 +567,15 @@ function ImportModal({ darkMode, onClose, onImport }) {
 }
 
 const EMPTY_FORM = {
-  name: "", age: "", occupation: "", cibil_score: "",
+  name: "", age: "", occupation: "", occupation_category: "Salaried", cibil_score: "",
   monthly_credit_1: "", monthly_credit_2: "", monthly_credit_3: "",
   monthly_credit_4: "", monthly_credit_5: "", monthly_credit_6: "",
   emi_debits: "", cc_spend: "", credit_limit: "", loan_page_visits: "",
   existing_loan_count: "", years_of_experience: "", account_balance: "",
+  owns_home: false, has_existing_home_loan: false, has_gold_to_pledge: false,
 };
+
+const OCCUPATION_CATEGORIES = ["Salaried", "Self-Employed-Professional", "Business-Owner", "Farmer", "Fisherman", "Student", "Other"];
 
 function AddCustomerModal({ darkMode, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -485,6 +616,7 @@ function AddCustomerModal({ darkMode, onClose, onSubmit }) {
       name: form.name.trim(),
       age: parseInt(form.age),
       occupation: form.occupation.trim(),
+      occupation_category: form.occupation_category,
       cibil_score: parseInt(form.cibil_score),
       monthly_credit_1: parseFloat(form.monthly_credit_1) || 0,
       monthly_credit_2: parseFloat(form.monthly_credit_2) || 0,
@@ -499,6 +631,9 @@ function AddCustomerModal({ darkMode, onClose, onSubmit }) {
       existing_loan_count: parseInt(form.existing_loan_count) || 0,
       years_of_experience: parseInt(form.years_of_experience) || 0,
       account_balance: parseFloat(form.account_balance) || 0,
+      owns_home: form.owns_home,
+      has_existing_home_loan: form.has_existing_home_loan,
+      has_gold_to_pledge: form.has_gold_to_pledge,
     };
     await onSubmit(payload);
     setSubmitting(false);
@@ -543,11 +678,29 @@ function AddCustomerModal({ darkMode, onClose, onSubmit }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 <Field label="Full Name" k="name" placeholder="e.g. Priya Sharma" />
                 <Field label="Age" k="age" type="number" placeholder="18–80" />
-                <Field label="Occupation" k="occupation" placeholder="e.g. Software Engineer" />
+                <Field label="Occupation (display)" k="occupation" placeholder="e.g. Software Engineer" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: "600", color: textSecondary, textTransform: "uppercase" }}>Occupation Category</label>
+                  <select value={form.occupation_category} onChange={e => set("occupation_category", e.target.value)}
+                    style={{ padding: "8px 10px", border: `1.5px solid ${border}`, borderRadius: "7px", fontSize: "13px", background: inputBg, color: textPrimary, outline: "none" }}>
+                    {OCCUPATION_CATEGORIES.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
                 <Field label="CIBIL Score" k="cibil_score" type="number" placeholder="300–900" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <Field label="Account Balance (₹)" k="account_balance" type="number" placeholder="0" />
+              </div>
+              {/* Property flags */}
+              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+                {[["owns_home", "Owns Home"], ["has_existing_home_loan", "Has Home Loan"], ["has_gold_to_pledge", "Has Gold to Pledge"]].map(([k, label]) => (
+                  <label key={k} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: textPrimary, cursor: "pointer" }}>
+                    <input type="checkbox" checked={form[k]} onChange={e => set(k, e.target.checked)} style={{ accentColor: "#1e40af", width: "15px", height: "15px" }} />
+                    {label}
+                  </label>
+                ))}
               </div>
 
               {/* Monthly Credits */}

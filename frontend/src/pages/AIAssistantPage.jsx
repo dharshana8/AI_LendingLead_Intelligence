@@ -2,37 +2,75 @@ import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import api from "../services/api";
 
-const QUICK_PROMPTS = [
-  "Which customers should I call today?",
-  "Who are the top 3 high-priority leads?",
-  "Generate a Home Loan pitch script",
-  "Which customers have low EMI burden?",
-  "Compare AI vs CIBIL screening results",
-  "What is the total potential revenue?",
-];
+const DS = {
+  navy: "#0E1A2B", navy2: "#152540",
+  gold: "#C79A3D", goldSoft: "#F1E3C3",
+  teal: "#2F6E63", tealSoft: "#DCEAE6",
+  rust: "#B5482F", rustSoft: "#F3DDD4",
+  ink: "#12181F", ink2: "#5C6672",
+  bg: "#F5F3ED", card: "#FFFFFF", border: "#E4DFD1",
+  textDark: "#E8ECF2", textMuted: "#8CA0BC",
+};
+
+const QUICK_PROMPTS = {
+  rm: [
+    "Who should I call today?",
+    "Top 3 high-priority leads?",
+    "Generate a Home Loan pitch script",
+    "Which customers have low EMI burden?",
+    "Draft an outreach message for my best lead",
+    "What is my conversion rate this month?",
+  ],
+  bm: [
+    "Which RM is performing best this month?",
+    "Show me all escalated high-priority leads",
+    "Which leads have been pending approval longest?",
+    "Compare branch conversion vs target",
+    "Which customers need immediate reassignment?",
+    "Summarise branch portfolio health",
+  ],
+  admin: [
+    "Overall portfolio health summary",
+    "Which branch has the highest AI score average?",
+    "Show model accuracy and performance metrics",
+    "How many leads were imported this week?",
+    "List all users and their activity",
+    "What is the total potential business value?",
+  ],
+};
+
+const WELCOME_MESSAGE = {
+  rm: "👋 Hello! I'm your **AI Lead Assistant** powered by Groq LLaMA 3.3-70B.\n\nAs your Relationship Manager assistant, I can help you:\n• Identify top leads to call today\n• Generate personalised outreach scripts\n• Explain AI scores and SHAP signals\n• Track your conversion pipeline\n\nWhat would you like to work on?",
+  bm: "👋 Hello! I'm your **Branch Intelligence Assistant** powered by Groq LLaMA 3.3-70B.\n\nAs your Branch Manager assistant, I can help you:\n• Monitor team performance and RM leaderboard\n• Identify escalations and pending approvals\n• Compare branch conversion rates\n• Reassign and prioritise high-value leads\n\nWhat would you like to review?",
+  admin: "👋 Hello! I'm your **Admin Analytics Assistant** powered by Groq LLaMA 3.3-70B.\n\nAs your Admin assistant, I can help you:\n• Monitor system-wide portfolio health\n• Review AI model performance metrics\n• Audit user activity and branch performance\n• Analyse potential business value across all branches\n\nWhat would you like to analyse?",
+};
 
 function renderMessage(text) {
   return text.split("\n").map((line, i) => {
     const bold = line.replace(/\*\*(.*?)\*\*/g, (_, m) => `<strong>${m}</strong>`);
-    return <p key={i} style={{ margin: "3px 0", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: bold || "&nbsp;" }} />;
+    return <p key={i} style={{ margin: "3px 0", lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: bold || "&nbsp;" }} />;
   });
 }
 
 export default function AIAssistantPage() {
-  const { darkMode } = useApp();
+  const { darkMode, user } = useApp();
+  const role = user?.role || "rm";
+  const prompts = QUICK_PROMPTS[role] || QUICK_PROMPTS.rm;
+  const welcomeText = WELCOME_MESSAGE[role] || WELCOME_MESSAGE.rm;
+
   const [messages, setMessages] = useState([
-    { role: "ai", text: "👋 Hello! I'm your **IDBI AI Lead Assistant** powered by Groq.\n\nI have live access to your customer portfolio and can help you:\n• Identify top leads to call today\n• Explain AI scores and signals\n• Generate outreach scripts\n• Analyze your portfolio performance\n\nWhat would you like to know?" }
+    { role: "ai", text: welcomeText }
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
 
-  const bg = darkMode ? "#0f172a" : "#f5f7fb";
-  const cardBg = darkMode ? "#1e293b" : "#fff";
-  const border = darkMode ? "#334155" : "#e5e7eb";
-  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
-  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+  const bg      = darkMode ? DS.navy  : DS.bg;
+  const cardBg  = darkMode ? DS.navy2 : DS.card;
+  const border  = darkMode ? "rgba(255,255,255,0.08)" : DS.border;
+  const textPrimary   = darkMode ? DS.textDark  : DS.ink;
+  const textSecondary = darkMode ? DS.textMuted : DS.ink2;
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
 
@@ -41,12 +79,9 @@ export default function AIAssistantPage() {
     if (!msg || typing) return;
     setInput("");
     setError("");
-
-    const userMsg = { role: "user", text: msg };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev, { role: "user", text: msg }]);
     setTyping(true);
 
-    // Build history for backend (exclude the initial greeting)
     const history = messages
       .slice(1)
       .map(m => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
@@ -64,48 +99,48 @@ export default function AIAssistantPage() {
   };
 
   return (
-    <div style={{ background: bg, minHeight: "100%", display: "flex", flexDirection: "column", height: "calc(100vh - 70px)" }}>
+    <div style={{ background: bg, minHeight: "100%", display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", fontFamily: "'IBM Plex Sans', sans-serif" }}>
       <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
 
-      {/* Header */}
-      <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, background: cardBg, display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "linear-gradient(135deg,#1e40af,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🤖</div>
+      {/* Header — navy dark panel */}
+      <div style={{ background: DS.navy, padding: "16px 24px", display: "flex", alignItems: "center", gap: "14px", borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+        <div style={{ width: "44px", height: "44px", borderRadius: "6px", background: DS.navy2, border: `1px solid rgba(199,154,61,0.3)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", flexShrink: 0 }}>🤖</div>
         <div>
-          <div style={{ fontSize: "15px", fontWeight: "700", color: textPrimary }}>IDBI AI Lead Assistant</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", animation: "blink 1.5s infinite" }} />
-            <span style={{ fontSize: "12px", color: "#16a34a", fontWeight: "500" }}>Online · Powered by Groq LLaMA 3</span>
+          <div style={{ fontSize: "15px", fontWeight: "700", color: DS.textDark, fontFamily: "'IBM Plex Sans', sans-serif" }}>AI Assistant — Groq LLaMA 3.3-70B</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: DS.teal, animation: "blink 1.5s infinite" }} />
+            <span style={{ fontSize: "11px", color: DS.teal, fontWeight: "600", fontFamily: "'IBM Plex Mono', monospace" }}>Online · Live Portfolio Data</span>
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          <span style={{ background: "#eff6ff", color: "#1e40af", fontSize: "11px", fontWeight: "600", padding: "4px 10px", borderRadius: "20px" }}>Live Data</span>
-          <span style={{ background: "#f5f3ff", color: "#7c3aed", fontSize: "11px", fontWeight: "600", padding: "4px 10px", borderRadius: "20px" }}>Groq API</span>
+          <span style={{ background: "rgba(199,154,61,0.15)", color: DS.gold, fontSize: "10px", fontWeight: "700", padding: "4px 10px", borderRadius: "3px", border: `1px solid rgba(199,154,61,0.3)`, fontFamily: "'IBM Plex Mono', monospace" }}>LIVE DATA</span>
+          <span style={{ background: "rgba(47,110,99,0.15)", color: DS.teal, fontSize: "10px", fontWeight: "700", padding: "4px 10px", borderRadius: "3px", border: `1px solid rgba(47,110,99,0.3)`, fontFamily: "'IBM Plex Mono', monospace" }}>GROQ API</span>
         </div>
       </div>
 
       {/* Quick Prompts */}
       <div style={{ padding: "12px 24px", borderBottom: `1px solid ${border}`, background: cardBg }}>
-        <div style={{ fontSize: "11px", color: textSecondary, fontWeight: "600", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Prompts</div>
+        <div style={{ fontSize: "10px", color: textSecondary, fontWeight: "700", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Quick Prompts</div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {QUICK_PROMPTS.map(p => (
+          {prompts.map(p => (
             <QuickPromptBtn key={p} text={p} onClick={() => sendMessage(p)} disabled={typing} darkMode={darkMode} border={border} textSecondary={textSecondary} />
           ))}
         </div>
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px", background: bg }}>
         {messages.map((msg, i) => (
-          <MessageBubble key={i} msg={msg} darkMode={darkMode} cardBg={cardBg} textPrimary={textPrimary} textSecondary={textSecondary} />
+          <MessageBubble key={i} msg={msg} darkMode={darkMode} cardBg={cardBg} textPrimary={textPrimary} textSecondary={textSecondary} border={border} />
         ))}
-        {typing && <TypingIndicator darkMode={darkMode} cardBg={cardBg} />}
+        {typing && <TypingIndicator cardBg={cardBg} border={border} />}
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
       <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, background: cardBg }}>
         {error && (
-          <div style={{ background: "#fee2e2", border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 12px", marginBottom: "10px", fontSize: "12px", color: "#b91c1c" }}>
+          <div style={{ background: DS.rustSoft, border: `1px solid ${DS.rust}`, borderRadius: "6px", padding: "10px 14px", marginBottom: "10px", fontSize: "12px", color: DS.rust, fontWeight: "500" }}>
             ⚠️ {error}
           </div>
         )}
@@ -115,27 +150,33 @@ export default function AIAssistantPage() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              placeholder="Ask about leads, scores, outreach strategies... (Enter to send)"
+              placeholder="Ask about leads, scores, outreach strategies… (Enter to send)"
               rows={2}
               style={{
-                width: "100%", padding: "12px 14px", border: `1.5px solid ${border}`,
-                borderRadius: "10px", fontSize: "13px", outline: "none", resize: "none",
-                background: darkMode ? "#0f172a" : "#f9fafb", color: textPrimary,
-                fontFamily: "inherit", lineHeight: 1.5,
+                width: "100%", padding: "11px 14px",
+                border: `1.5px solid ${border}`, borderRadius: "6px",
+                fontSize: "13px", outline: "none", resize: "none",
+                background: darkMode ? DS.navy : DS.bg,
+                color: textPrimary, fontFamily: "'IBM Plex Sans', sans-serif",
+                lineHeight: 1.5, boxSizing: "border-box",
               }}
-              onFocus={e => e.target.style.borderColor = "#1e40af"}
+              onFocus={e => e.target.style.borderColor = DS.gold}
               onBlur={e => e.target.style.borderColor = border}
             />
           </div>
-          <button onClick={() => sendMessage()} disabled={!input.trim() || typing}
+          <button
+            onClick={() => sendMessage()}
+            disabled={!input.trim() || typing}
             style={{
-              padding: "12px 20px", background: input.trim() && !typing ? "linear-gradient(135deg,#1e40af,#2563eb)" : "#e5e7eb",
-              color: input.trim() && !typing ? "#fff" : "#9ca3af",
-              border: "none", borderRadius: "10px", fontSize: "14px", cursor: input.trim() && !typing ? "pointer" : "not-allowed",
-              fontWeight: "700", transition: "all 0.2s", whiteSpace: "nowrap",
+              padding: "11px 20px", borderRadius: "6px", border: "none",
+              background: input.trim() && !typing ? DS.gold : DS.border,
+              color: input.trim() && !typing ? DS.navy : DS.ink2,
+              fontSize: "13px", fontWeight: "700", cursor: input.trim() && !typing ? "pointer" : "not-allowed",
+              transition: "all 0.15s", whiteSpace: "nowrap",
+              fontFamily: "'IBM Plex Sans', sans-serif",
             }}>Send ↑</button>
         </div>
-        <div style={{ fontSize: "11px", color: textSecondary, marginTop: "6px" }}>
+        <div style={{ fontSize: "10px", color: textSecondary, marginTop: "6px", fontFamily: "'IBM Plex Mono', monospace" }}>
           Enter to send · Shift+Enter for new line · Responses use your live customer data
         </div>
       </div>
@@ -143,23 +184,34 @@ export default function AIAssistantPage() {
   );
 }
 
-function MessageBubble({ msg, darkMode, cardBg, textPrimary, textSecondary }) {
+function MessageBubble({ msg, darkMode, cardBg, textPrimary, textSecondary, border }) {
   const isAI = msg.role === "ai";
   return (
     <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", flexDirection: isAI ? "row" : "row-reverse" }}>
+      {/* Avatar */}
       <div style={{
         width: "34px", height: "34px", borderRadius: "50%", flexShrink: 0,
-        background: isAI ? "linear-gradient(135deg,#1e40af,#7c3aed)" : "linear-gradient(135deg,#f59e0b,#ef4444)",
+        background: isAI ? DS.navy2 : DS.gold,
+        border: isAI ? `1px solid rgba(199,154,61,0.3)` : "none",
         display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px",
       }}>{isAI ? "🤖" : "👤"}</div>
+
+      {/* Bubble */}
       <div style={{
-        maxWidth: "75%", background: isAI ? cardBg : "#1e40af",
-        borderRadius: isAI ? "4px 12px 12px 12px" : "12px 4px 12px 12px",
-        padding: "12px 16px", border: isAI ? `1px solid ${darkMode ? "#334155" : "#e5e7eb"}` : "none",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        maxWidth: "75%",
+        background: isAI ? cardBg : DS.navy,
+        borderRadius: isAI ? "4px 8px 8px 8px" : "8px 4px 8px 8px",
+        padding: "12px 16px",
+        border: isAI ? `1px solid ${border}` : "none",
+        borderLeft: isAI ? `3px solid ${DS.gold}` : undefined,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}>
-        {isAI && <div style={{ fontSize: "11px", fontWeight: "700", color: "#1e40af", marginBottom: "6px" }}>IDBI AI Assistant</div>}
-        <div style={{ fontSize: "13px", color: isAI ? textPrimary : "#fff", lineHeight: 1.6 }}>
+        {isAI && (
+          <div style={{ fontSize: "10px", fontWeight: "700", color: DS.gold, marginBottom: "6px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.06em" }}>
+            AI ASSISTANT
+          </div>
+        )}
+        <div style={{ fontSize: "13px", color: isAI ? textPrimary : DS.textDark, lineHeight: 1.65 }}>
           {renderMessage(msg.text)}
         </div>
       </div>
@@ -167,14 +219,14 @@ function MessageBubble({ msg, darkMode, cardBg, textPrimary, textSecondary }) {
   );
 }
 
-function TypingIndicator({ darkMode, cardBg }) {
+function TypingIndicator({ cardBg, border }) {
   return (
     <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-      <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg,#1e40af,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🤖</div>
-      <div style={{ background: cardBg, borderRadius: "4px 12px 12px 12px", padding: "14px 18px", border: `1px solid ${darkMode ? "#334155" : "#e5e7eb"}` }}>
+      <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: DS.navy2, border: `1px solid rgba(199,154,61,0.3)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🤖</div>
+      <div style={{ background: cardBg, borderRadius: "4px 8px 8px 8px", padding: "14px 18px", border: `1px solid ${border}`, borderLeft: `3px solid ${DS.gold}` }}>
         <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
           {[0, 0.2, 0.4].map((delay, i) => (
-            <div key={i} style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1e40af", animation: `blink 1s ${delay}s infinite` }} />
+            <div key={i} style={{ width: "7px", height: "7px", borderRadius: "50%", background: DS.gold, animation: `blink 1s ${delay}s infinite` }} />
           ))}
         </div>
       </div>
@@ -185,12 +237,20 @@ function TypingIndicator({ darkMode, cardBg }) {
 function QuickPromptBtn({ text, onClick, disabled, darkMode, border, textSecondary }) {
   const [h, setH] = useState(false);
   return (
-    <button onClick={onClick} disabled={disabled} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
       style={{
-        padding: "6px 12px", borderRadius: "20px", border: `1px solid ${h && !disabled ? "#1e40af" : border}`,
-        background: h && !disabled ? "#eff6ff" : "transparent", color: h && !disabled ? "#1e40af" : textSecondary,
-        fontSize: "12px", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.15s", fontWeight: "500",
+        padding: "5px 12px", borderRadius: "3px",
+        border: `1px solid ${h && !disabled ? DS.gold : border}`,
+        background: h && !disabled ? DS.goldSoft : "transparent",
+        color: h && !disabled ? DS.ink : textSecondary,
+        fontSize: "11px", cursor: disabled ? "not-allowed" : "pointer",
+        transition: "all 0.15s", fontWeight: "500",
         opacity: disabled ? 0.5 : 1,
+        fontFamily: "'IBM Plex Sans', sans-serif",
       }}>{text}</button>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { BRAND } from "../App";
 
-const BRANCHES = ["Mumbai Main", "Delhi Central", "Bangalore Tech", "Chennai South", "HQ Mumbai"];
+const BRANCHES = ["Chennai South", "Coimbatore Central", "Madurai North", "Trichy Main", "HQ Chennai"];
 const ROLES = [
   { value: "rm", label: "Relationship Manager" },
   { value: "bm", label: "Branch Manager" },
@@ -29,7 +30,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [reg, setReg] = useState({
     employeeId: "", password: "", confirmPassword: "",
-    name: "", role: "rm", branch: "Mumbai Main", email: "", phone: "",
+    name: "", role: "rm", branch: "Chennai South", email: "", phone: "",
   });
 
   const handleLogin = async (e) => {
@@ -58,7 +59,10 @@ export default function LoginPage() {
     const loginResult = await login(reg.employeeId, reg.password);
     setLoading(false);
     if (!loginResult.success) setError(loginResult.error);
-    else addToast(`Welcome, ${reg.name}! Signed in as ${reg.role === "admin" ? "Administrator" : reg.role === "bm" ? "Branch Manager" : "Relationship Manager"}.`, "success");
+    else {
+      const roleLabel = result.data?.role === "admin" ? "Administrator" : result.data?.role === "bm" ? "Branch Manager" : "Relationship Manager";
+      addToast(`Welcome, ${result.data?.name || reg.name}! Signed in as ${roleLabel}.`, "success");
+    }
   };
 
   return (
@@ -76,51 +80,37 @@ export default function LoginPage() {
         flex: 1, background: DS.navy, display: "flex", flexDirection: "column",
         justifyContent: "center", padding: "60px 56px", minWidth: 0, position: "relative", overflow: "hidden",
       }}>
-        {/* subtle texture dots */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(199,154,61,0.06) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(199,154,61,0.05) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", maxWidth: "380px", animation: "fadeUp 0.7s ease" }}>
+        <div style={{ position: "relative", maxWidth: "360px", animation: "fadeUp 0.7s ease" }}>
           {/* Wordmark */}
-          <div style={{ marginBottom: "48px" }}>
-            <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "38px", fontWeight: "700", color: DS.gold, letterSpacing: "-1px", lineHeight: 1 }}>IDBI</div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", fontWeight: "500", color: DS.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: "4px" }}>Lending Intelligence</div>
+          <div style={{ marginBottom: "40px" }}>
+            <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "42px", fontWeight: "700", color: DS.gold, letterSpacing: "-1px", lineHeight: 1 }}>{BRAND}</div>
+            <div style={{ fontSize: "12px", fontWeight: "500", color: DS.textMuted, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: "6px" }}>Lending Intelligence</div>
           </div>
 
-          <h1 style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "26px", fontWeight: "600", color: DS.textDark, lineHeight: 1.35, marginBottom: "14px" }}>
-            AI-powered lead scoring<br />for relationship managers
+          <h1 style={{ fontSize: "24px", fontWeight: "600", color: DS.textDark, lineHeight: 1.4, marginBottom: "16px", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            AI-powered lead scoring for relationship managers
           </h1>
-          <p style={{ fontSize: "14px", color: DS.textMuted, lineHeight: 1.75, marginBottom: "44px" }}>
-            Identify, score, and convert high-value lending leads using machine learning and real-time financial analytics.
+
+          <p style={{ fontSize: "14px", color: DS.textMuted, lineHeight: 1.7, marginBottom: "48px" }}>
+            Identify and convert high-value lending leads using machine learning and real-time financial analytics.
           </p>
 
-          {/* Feature list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {[
-              { label: "AI Lead Scoring", sub: "95.95% model accuracy", dot: DS.gold },
-              { label: "Predictive Analytics", sub: "Real-time portfolio insights", dot: DS.teal },
-              { label: "Role-Based Access", sub: "RM · Branch Manager · Admin", dot: DS.gold },
-              { label: "Secure & Compliant", sub: "RBI guidelines adherent", dot: DS.teal },
-            ].map(({ label, sub, dot }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px" }}>
-                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: dot, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: DS.textDark }}>{label}</div>
-                  <div style={{ fontSize: "11px", color: DS.textMuted, marginTop: "1px" }}>{sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Demo credentials */}
-          <div style={{ marginTop: "36px", padding: "14px 16px", background: "rgba(199,154,61,0.08)", border: "1px solid rgba(199,154,61,0.2)", borderRadius: "6px" }}>
-            <div style={{ fontSize: "10px", fontWeight: "700", color: DS.gold, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Demo Credentials</div>
-            {[["RM001", "password123", "Relationship Manager"], ["BM001", "password123", "Branch Manager"], ["ADM001", "admin123", "Administrator"]].map(([id, pw, role]) => (
-              <div key={id} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: DS.gold, minWidth: "60px" }}>{id}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: DS.textMuted }}>{pw}</span>
-                <span style={{ fontSize: "10px", color: DS.textMuted, marginLeft: "auto" }}>{role}</span>
-              </div>
-            ))}
+          {/* Single clean stat */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "18px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px" }}>
+            <div style={{ borderRight: "1px solid rgba(255,255,255,0.1)", paddingRight: "16px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "800", color: DS.gold, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>95.95%</div>
+              <div style={{ fontSize: "11px", color: DS.textMuted, marginTop: "4px" }}>Model Accuracy</div>
+            </div>
+            <div style={{ borderRight: "1px solid rgba(255,255,255,0.1)", paddingRight: "16px" }}>
+              <div style={{ fontSize: "28px", fontWeight: "800", color: DS.gold, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>3×</div>
+              <div style={{ fontSize: "11px", color: DS.textMuted, marginTop: "4px" }}>Faster Screening</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "28px", fontWeight: "800", color: DS.gold, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>+50%</div>
+              <div style={{ fontSize: "11px", color: DS.textMuted, marginTop: "4px" }}>More Leads Found</div>
+            </div>
           </div>
         </div>
       </div>
@@ -162,9 +152,9 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "22px", fontWeight: "600", color: DS.ink, marginBottom: "4px" }}>Welcome back</div>
-                <div style={{ fontSize: "13px", color: DS.ink2 }}>Sign in to your IDBI dashboard</div>
+                <div style={{ fontSize: "13px", color: DS.ink2 }}>Sign in to your {BRAND} dashboard</div>
               </div>
-              <LPField label="Employee ID or Email" value={empId} onChange={setEmpId} placeholder="e.g. RM001 or name@idbi.co.in" />
+              <LPField label="Employee ID or Email" value={empId} onChange={setEmpId} placeholder="e.g. RM001" />
               <LPPasswordField label="Password" value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(s => !s)} onEnter={handleLogin} />
               <LPSubmitBtn loading={loading} label="Sign In" />
             </form>
@@ -172,12 +162,12 @@ export default function LoginPage() {
             <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "22px", fontWeight: "600", color: DS.ink, marginBottom: "4px" }}>Create account</div>
-                <div style={{ fontSize: "13px", color: DS.ink2 }}>Register as an IDBI employee</div>
+                <div style={{ fontSize: "13px", color: DS.ink2 }}>Register as a {BRAND} employee</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <LPField label="Full Name" value={reg.name} onChange={v => setReg(r => ({ ...r, name: v }))} placeholder="Your full name" span />
                 <LPField label="Employee ID" value={reg.employeeId} onChange={v => setReg(r => ({ ...r, employeeId: v }))} placeholder="e.g. RM005" />
-                <LPField label="Email" value={reg.email} onChange={v => setReg(r => ({ ...r, email: v }))} placeholder="name@idbi.co.in" type="email" />
+                <LPField label="Email" value={reg.email} onChange={v => setReg(r => ({ ...r, email: v }))} placeholder="name@example.com" type="email" />
                 <LPField label="Phone" value={reg.phone} onChange={v => setReg(r => ({ ...r, phone: v }))} placeholder="+91 98765 43210" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -193,7 +183,7 @@ export default function LoginPage() {
           )}
 
           <div style={{ fontSize: "11px", color: "#C8C0B0", textAlign: "center", marginTop: "28px" }}>
-            IDBI Bank · AI Lending Lead Intelligence · v1.0
+            {BRAND} · AI Lending Lead Intelligence · v1.0
           </div>
         </div>
       </div>

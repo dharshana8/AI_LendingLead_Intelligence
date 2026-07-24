@@ -1,65 +1,49 @@
-import React, { useState } from "react";
+import React from "react";
 import { useApp } from "../context/AppContext";
-
-function SkeletonKPI() {
-  return (
-    <div style={{ flex: "1 1 160px", background: "#fff", borderRadius: "14px", padding: "20px", border: "1px solid #e5e7eb", height: "130px" }}>
-      {[44, 28, 14, 11].map((h, i) => (
-        <div key={i} style={{ height: h, background: "#f3f4f6", borderRadius: "8px", marginBottom: "8px", width: i === 0 ? "44px" : i === 1 ? "60%" : "80%", animation: "shimmer 1.5s infinite" }} />
-      ))}
-    </div>
-  );
-}
 
 export default function KPICards() {
   const { analytics, dataLoading, darkMode } = useApp();
-  const cardBg = darkMode ? "#1e293b" : "#fff";
-  const border = darkMode ? "#334155" : "#e5e7eb";
+  const cardBg = darkMode ? "#152540" : "#FFFFFF";
+  const border = darkMode ? "rgba(255,255,255,0.08)" : "#E4DFD1";
 
   if (dataLoading) {
     return (
-      <div style={{ display: "flex", gap: "16px", padding: "24px 28px 0", flexWrap: "wrap" }}>
-        {[1, 2, 3, 4, 5].map(i => <SkeletonKPI key={i} />)}
+      <div style={{ display: "flex", gap: "12px", padding: "20px 24px 0", flexWrap: "wrap" }}>
+        {[1,2,3,4,5].map(i => (
+          <div key={i} style={{ flex: "1 1 150px", background: cardBg, borderRadius: "6px", padding: "18px", border: `1px solid ${border}`, height: "110px", animation: "shimmer 1.5s infinite" }} />
+        ))}
       </div>
     );
   }
 
   const a = analytics || {};
-  const cardData = [
-    { icon: "👥", value: a.total ?? "—",            label: "Total Leads",          desc: "Active pipeline leads",      color: "#1e40af", bg: "#eff6ff" },
-    { icon: "🔥", value: a.highCount ?? "—",         label: "High Priority",        desc: "Immediate outreach needed",  color: "#22c55e", bg: "#dcfce7" },
-    { icon: "🤖", value: a.avgScore ?? "—",          label: "Avg AI Score",         desc: "Above industry benchmark",   color: "#f59e0b", bg: "#fef3c7" },
-    { icon: "📈", value: a.avgConv ? `${a.avgConv}%` : "—", label: "Expected Conversion", desc: "vs 15% industry avg", color: "#8b5cf6", bg: "#f5f3ff" },
-    { icon: "💰", value: a.potentialRevenue ?? "—",  label: "Potential Business",   desc: "Total loan opportunity",     color: "#ef4444", bg: "#fee2e2" },
+  const cards = [
+    { value: a.total ?? "—",                      label: "Total Leads",       sub: "Active pipeline",        accent: "#0E1A2B" },
+    { value: a.highCount ?? "—",                  label: "High Priority",     sub: "Immediate action",       accent: "#C79A3D" },
+    { value: a.avgScore ?? "—",                   label: "Avg AI Score",      sub: "Above benchmark",        accent: "#2F6E63" },
+    { value: a.avgConv ? `${a.avgConv}%` : "—",  label: "Conversion Rate",   sub: "vs 15% industry avg",    accent: "#C79A3D" },
+    { value: a.potentialRevenue ?? "—",           label: "Potential Revenue", sub: "Total loan opportunity", accent: "#2F6E63" },
   ];
 
   return (
-    <div style={{ display: "flex", gap: "16px", padding: "24px 28px 0", flexWrap: "wrap" }}>
-      {cardData.map((c, i) => <KPICard key={i} {...c} cardBg={cardBg} border={border} darkMode={darkMode} />)}
+    <div style={{ display: "flex", gap: "12px", padding: "20px 24px 0", flexWrap: "wrap" }}>
+      {cards.map((c, i) => <KPICard key={i} {...c} cardBg={cardBg} border={border} darkMode={darkMode} />)}
     </div>
   );
 }
 
-function KPICard({ icon, value, label, desc, color, bg, cardBg, border, darkMode }) {
-  const [hovered, setHovered] = useState(false);
-  const textPrimary = darkMode ? "#f1f5f9" : "#111827";
-  const textSecondary = darkMode ? "#94a3b8" : "#6b7280";
+function KPICard({ value, label, sub, accent, cardBg, border, darkMode }) {
+  const textPrimary = darkMode ? "#E8ECF2" : "#12181F";
+  const textSecondary = darkMode ? "#8CA0BC" : "#5C6672";
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        flex: "1 1 160px", background: cardBg, borderRadius: "14px",
-        padding: "20px", border: `1px solid ${border}`,
-        boxShadow: hovered ? "0 12px 28px rgba(0,0,0,0.12)" : "0 4px 10px rgba(0,0,0,0.06)",
-        transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        transition: "all 0.25s ease", cursor: "default",
-      }}
-    >
-      <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", marginBottom: "14px" }}>{icon}</div>
-      <div style={{ fontSize: "28px", fontWeight: "800", color: textPrimary, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: "13px", fontWeight: "600", color: textPrimary, marginTop: "6px" }}>{label}</div>
-      <div style={{ fontSize: "11px", color: textSecondary, marginTop: "4px" }}>{desc}</div>
+    <div style={{
+      flex: "1 1 150px", background: cardBg, borderRadius: "6px",
+      padding: "18px 20px", border: `1px solid ${border}`,
+      borderTop: `2px solid ${accent}`,
+    }}>
+      <div style={{ fontSize: "26px", fontWeight: "700", color: textPrimary, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: "12px", fontWeight: "600", color: textPrimary, marginTop: "8px", fontFamily: "'IBM Plex Sans', sans-serif" }}>{label}</div>
+      <div style={{ fontSize: "11px", color: textSecondary, marginTop: "3px", fontFamily: "'IBM Plex Sans', sans-serif" }}>{sub}</div>
     </div>
   );
 }

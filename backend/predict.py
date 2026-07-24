@@ -140,3 +140,25 @@ def predict_customer(data: dict) -> dict:
         "prediction": prediction,
         "shap_top3": shap_top3,
     }
+
+
+def predict_batch(data_list: list[dict]) -> list[dict]:
+    """Batch predict without SHAP — fast path for bulk import."""
+    model, scaler, _ = _load_artefacts()
+    KEY_MAP = {
+        "Age": "age", "Monthly_Income": "income", "CIBIL_Score": "cibil_score",
+        "EMI_Burden": "emi_burden", "Savings_Ratio": "savings_ratio",
+        "Credit_Health": "credit_health", "Repayment_Capacity": "repayment_capacity",
+        "Debt_Ratio": "debt_ratio", "Existing_Loan_Count": "existing_loan_count",
+        "Years_of_Experience": "years_of_experience", "Account_Balance": "account_balance",
+    }
+    vectors = np.array(
+        [[float(d.get(KEY_MAP[f], d.get(f, 0))) for f in FEATURES] for d in data_list],
+        dtype=np.float64
+    )
+    scaled = scaler.transform(vectors)
+    probas = model.predict_proba(scaled)[:, 1]
+    return [
+        {"ai_score": round(float(p) * 100, 2), "conversion_probability": round(float(p), 4), "shap_top3": []}
+        for p in probas
+    ]

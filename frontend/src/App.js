@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import LoginPage from "./pages/LoginPage";
+import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import BMDashboardPage from "./pages/BMDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -17,6 +18,8 @@ import { AdminBranchesPage, AdminAuditPage } from "./pages/admin/AdminBranchesAu
 import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
 import ToastContainer from "./components/Toast";
+
+export const BRAND = "NOVA";
 
 const GLOBAL_STYLES = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,25 +58,25 @@ const GLOBAL_STYLES = `
 `;
 
 function SkeletonLoader({ darkMode }) {
-  const bg = darkMode ? "#0f172a" : "#f5f7fb";
-  const card = darkMode ? "#1e293b" : "#fff";
-  const shimmer = darkMode ? "#334155" : "#f3f4f6";
+  const bg   = darkMode ? "#0E1A2B" : "#F5F3ED";
+  const card = darkMode ? "#152540" : "#FFFFFF";
+  const sh   = darkMode ? "rgba(255,255,255,0.06)" : "#E4DFD1";
   return (
     <div style={{ minHeight: "100vh", background: bg, padding: "28px" }}>
-      <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} style={{ flex: "1 1 160px", background: card, borderRadius: "14px", padding: "20px", height: "110px" }}>
-            {[44, 28, 14, 11].map((h, j) => (
-              <div key={j} style={{ height: h, background: shimmer, borderRadius: "8px", marginBottom: "8px", width: j === 0 ? "44px" : j === 1 ? "60%" : "80%", animation: "shimmer 1.5s infinite" }} />
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        {[1,2,3,4,5].map(i => (
+          <div key={i} style={{ flex: "1 1 150px", background: card, borderRadius: "6px", padding: "18px", height: "100px", border: "1px solid #E4DFD1" }}>
+            {[36, 22, 12].map((h, j) => (
+              <div key={j} style={{ height: h, background: sh, borderRadius: "3px", marginBottom: "8px", width: j === 0 ? "40px" : j === 1 ? "55%" : "75%", animation: "shimmer 1.5s infinite" }} />
             ))}
           </div>
         ))}
       </div>
-      <div style={{ background: card, borderRadius: "14px", height: "80px", marginBottom: "20px", animation: "shimmer 1.5s infinite" }} />
-      <div style={{ background: card, borderRadius: "14px", height: "400px", animation: "shimmer 1.5s infinite" }} />
-      <div style={{ position: "fixed", bottom: "40px", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "12px", background: card, padding: "14px 24px", borderRadius: "40px", boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}>
-        <div style={{ width: "20px", height: "20px", border: "3px solid #e5e7eb", borderTop: "3px solid #1e40af", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <span style={{ fontSize: "13px", fontWeight: "600", color: darkMode ? "#f1f5f9" : "#374151" }}>Loading AI Lead Intelligence...</span>
+      <div style={{ background: card, borderRadius: "6px", height: "72px", marginBottom: "16px", animation: "shimmer 1.5s infinite", border: "1px solid #E4DFD1" }} />
+      <div style={{ background: card, borderRadius: "6px", height: "380px", animation: "shimmer 1.5s infinite", border: "1px solid #E4DFD1" }} />
+      <div style={{ position: "fixed", bottom: "40px", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "12px", background: card, padding: "12px 24px", borderRadius: "6px", boxShadow: "0 8px 30px rgba(0,0,0,0.12)", border: "1px solid #E4DFD1" }}>
+        <div style={{ width: "16px", height: "16px", border: "2px solid #E4DFD1", borderTop: "2px solid #C79A3D", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <span style={{ fontSize: "12px", fontWeight: "600", color: darkMode ? "#E8ECF2" : "#12181F", fontFamily: "'IBM Plex Sans', sans-serif" }}>Loading {BRAND} Lead Intelligence...</span>
       </div>
     </div>
   );
@@ -95,6 +98,9 @@ function AppShell() {
   const bg = darkMode ? "#0E1A2B" : "#F5F3ED";
   const font = "'IBM Plex Sans', system-ui, sans-serif";
 
+  const [showLanding, setShowLanding] = useState(true);
+
+  if (!user && showLanding) return <LandingPage onLogin={() => setShowLanding(false)} />;
   if (!user) return <LoginPage />;
   if (loading) return <SkeletonLoader darkMode={darkMode} />;
 
@@ -142,11 +148,11 @@ function PageRouter({ activePage, onNavigate }) {
 
 function AccessDenied({ onBack }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: "40px", textAlign: "center" }}>
-      <div style={{ fontSize: "56px", marginBottom: "16px" }}>🔒</div>
-      <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#111827", marginBottom: "8px" }}>Access Denied</h2>
-      <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "24px" }}>You don't have permission to view this page.</p>
-      <button onClick={onBack} style={{ padding: "10px 24px", background: "#1e40af", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: "40px", textAlign: "center", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
+      <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#12181F", marginBottom: "8px" }}>Access Denied</h2>
+      <p style={{ fontSize: "13px", color: "#5C6672", marginBottom: "24px" }}>You don't have permission to view this page.</p>
+      <button onClick={onBack} style={{ padding: "9px 22px", background: "#C79A3D", color: "#0E1A2B", border: "none", borderRadius: "5px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
         ← Back to Dashboard
       </button>
     </div>
