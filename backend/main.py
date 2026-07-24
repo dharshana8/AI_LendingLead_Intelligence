@@ -24,9 +24,14 @@ app = FastAPI(
     version="2.0.0",
 )
 
+import os
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        os.getenv("FRONTEND_URL", ""),
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
